@@ -74,10 +74,6 @@ st.subheader("Residential Summary (resi_summary)")
 resi_container = st.container()
 button_container = st.container()
 
-with button_container:
-    if st.button("Clear summary", disabled=ss["resi_df"].empty):
-        ss["resi_df"] = pd.DataFrame()
-        st.info("Summary cleared.")
 
 with resi_container:
     if st.button("Run resi_summary()", disabled=len(ss["logs"]) == 0):
@@ -99,4 +95,7 @@ with resi_container:
         except Exception as e:
             st.error(f"Failed to compute resi_summary: {e}")
 
-
+with button_container:
+    if st.button("Clear summary", disabled=ss["resi_df"].empty):
+        ss["resi_df"] = pd.DataFrame()
+        st.info("Summary cleared.")
