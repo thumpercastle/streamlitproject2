@@ -37,7 +37,7 @@ def save_upload_to_tmp(uploaded_file) -> str:
         return tmp.name
 
 
-def build_survey(log_map: dict, times_kwarg: dict | None = None) -> Survey:
+def build_survey(log_map: dict, times_kwarg: dict | None = None) -> pc.Survey:
     """Create a Survey, attach logs, and optionally call set_periods(times=...)."""
     survey = pc.Survey()
 
