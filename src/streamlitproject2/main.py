@@ -124,7 +124,7 @@ button_container = st.container()
 
 
 with resi_container:
-    if ss["logs"].empty:
+    if not bool(ss["logs"]):
         st.info("No logs loaded yet.")
     else:
     # if st.button("Run resi_summary()", key=0, disabled=len(ss["logs"]) == 0):
@@ -159,7 +159,7 @@ leq_button_container = st.container()
 
 
 with leq_container:
-    if ss["logs"].empty:
+    if not bool(ss["logs"]):
         st.info("No logs loaded yet.")
     else:
     # if st.button("Run leq_spectra()", key=2, disabled=len(ss["logs"]) == 0):
