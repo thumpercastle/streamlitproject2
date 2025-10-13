@@ -105,6 +105,7 @@ survey.set_periods(times=times)
 
 # Sidebar menu
 with st.sidebar:
+    st.markdown("### Survey Config")
     st.markdown("## Set Time Periods")
     day_start = st.time_input("Set Day Period Start", dt.time(7, 00))
     evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00))
@@ -168,6 +169,7 @@ st.divider()
 
 # Compute and display resi_summary directly from current logs
 st.subheader("Lmax Spectra")
+st.text("Note: the timestamp in the 'Date' column shows the date when the night-time period started, not the date on which the lmax occurred. e.g. 2025-08-14 00:14 lmax would have occured in the early hours of 2025-08-15.")
 lmax_container = st.container()
 lmax_button_container = st.container()
 
@@ -192,6 +194,7 @@ st.divider()
 
 # Compute and display resi_summary directly from current logs
 st.subheader("Modal values")
+st.text("Note: Ignore the 'Date' column")
 modal_container = st.container()
 modal_button_container = st.container()
 
