@@ -76,12 +76,13 @@ with col_reset:
 # day_col, evening_col, night_col = st.columns([1, 1, 1])
 # with day_col:
 with st.sidebar:
+    st.markdown("## Set Time Periods")
     day_start = st.time_input("Set Day Period Start", dt.time(7, 00))
 # with evening_col:
     evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00))
 # with night_col:
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
-st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
+    st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
 
 st.divider()
 # Compute and display resi_summary directly from current logs
