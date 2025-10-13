@@ -5,7 +5,7 @@ import numpy as np
 
 import os
 import tempfile
-from typing import List, Dict
+from typing import Dict, List
 
 import plotly.graph_objects as go
 
@@ -15,148 +15,100 @@ st.title("pycoustic Streamlit GUI")
 
 # Initialize session state
 ss = st.session_state
-ss.setdefault("tmp_paths", [])          # List[str] for cleanup
-ss.setdefault("logs", {})               # Dict[str, Log]
-ss.setdefault("survey", None)           # Survey or None
-ss.setdefault("resi_df", None)          # Cached summary
-ss.setdefault("periods_times", {        # Default times for set_periods()
+ss.setdefault("tmp_paths", [])                 # List[str] for cleanup
+ss.setdefault("logs", {})                      # Dict[str, pc.Log]
+# Initialize Survey eagerly as requested
+if "survey" not in ss:
+    ss["survey"] = pc.Survey()
+ss.setdefault("resi_df", pd.DataFrame)         # Cached summary (unused here)
+ss.setdefault("periods_times", {               # Default times for set_periods()
     "day": (7, 0),
     "evening": (23, 0),
     "night": (23, 0),
 })
-ss.setdefault("lmax_n", 5)
-ss.setdefault("lmax_t", 30)
+ss.setdefault("lmax_n", 10)
+ss.setdefault("lmax_t", 2)
 ss.setdefault("extra_kwargs_raw", "{}")
 
+st.subheader("Upload CSV logs")
+uploaded_files = st.file_uploader(
+    "Choose one or more CSV files",
+    type=["csv"],
+    accept_multiple_files=True,
+    help="Each CSV will be turned into a pycoustic.Log and added to the collection below.",
+)
 
-def save_upload_to_tmp(uploaded_file) -> str:
-    """Persist an uploaded CSV to a temporary file and return its path."""
-    # Create a persistent temporary file (delete later on reset)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-        tmp.write(uploaded_file.getbuffer())
-        return tmp.name
+col_add, col_survey, col_reset = st.columns([1, 1, 1])
 
-
-def build_survey(log_map: dict, times_kwarg: dict | None = None) -> pc.Survey:
-    """Create a Survey, attach logs, and optionally call set_periods(times=...)."""
-    survey = pc.Survey()
-
-    # Attach logs to the Survey (simple, direct assignment to internal storage)
-    # If a public adder method exists, prefer that; fallback to internal attribute.
-    if hasattr(survey, "add_log"):
-        for key, lg in log_map.items():
-            try:
-                survey.add_log(key, lg)  # type: ignore[attr-defined]
-            except Exception:
-                # Fallback if signature differs
-                setattr(survey, "_logs", log_map)
-                break
-    else:
-        setattr(survey, "_logs", log_map)
-
-    # Apply periods if provided
-    if times_kwarg is not None:
+def _cleanup_tmp_files(paths: List[str]) -> None:
+    for p in paths:
         try:
-            survey.set_periods(times=times_kwarg)
+            os.remove(p)
+        except Exception:
+            pass
+
+with col_add:
+    if st.button("Add uploaded files as Logs", disabled=not uploaded_files):
+        added = 0
+        for f in uploaded_files or []:
+            # Save uploaded CSV to a temporary file so pycoustic can read it
+            tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
+            tmp.write(f.getbuffer())
+            tmp.flush()
+            tmp.close()
+            ss["tmp_paths"].append(tmp.name)
+
+            try:
+                # Prefer a simple, explicit constructor from CSV if available
+                if hasattr(pc.Log, "from_csv"):
+                    log = pc.Log.from_csv(tmp.name)  # type: ignore[attr-defined]
+                else:
+                    # Some versions may accept a path directly
+                    log = pc.Log(tmp.name)
+            except Exception as e:
+                st.error(f"Failed to create Log from {f.name}: {e}")
+                continue
+
+            # Use the file stem as the key/name
+            name = os.path.splitext(os.path.basename(f.name))[0]
+            ss["logs"][name] = log
+            added += 1
+
+        if added:
+            st.success(f"Added {added} log(s).")
+
+with col_survey:
+    if st.button("Build Survey from current Logs", disabled=len(ss["logs"]) == 0):
+        # Try to build in one go, fallback to adding with names
+        try:
+            try:
+                survey = pc.Survey(list(ss["logs"].values()))
+            except Exception:
+                survey = pc.Survey()
+                if hasattr(survey, "add"):
+                    for name, lg in ss["logs"].items():
+                        # Add with explicit name as requested
+                        survey.add(data=lg, name=name)  # type: ignore[attr-defined]
+            ss["survey"] = survey
+            st.success(f"Survey created with {len(ss['logs'])} log(s).")
         except Exception as e:
-            st.warning(f"set_periods failed with provided times: {e}")
+            st.error(f"Failed to create Survey: {e}")
 
-    return survey
+with col_reset:
+    if st.button("Reset"):
+        _cleanup_tmp_files(ss.get("tmp_paths", []))
+        ss["tmp_paths"] = []
+        ss["logs"] = {}
+        ss["survey"] = pc.Survey()
+        st.rerun()
 
-
-# File Upload in expander container
-with st.expander("1) Load CSV data", expanded=True):
-    st.write("Upload one or more CSV files to create Log objects for a single Survey.")
-
-    uploaded = st.file_uploader(
-        "Select CSV files",
-        type=["csv"],
-        accept_multiple_files=True,
-        help="Each CSV should match the expected pycoustic format."
-    )
-
-    if uploaded:
-        st.caption("Assign a position name for each file (defaults to base filename).")
-
-        # Build a list of (file, default_name) for user naming
-        pos_names = []
-        for idx, f in enumerate(uploaded):
-            default_name = f.name.rsplit(".", 1)[0]
-            name = st.text_input(
-                f"Position name for file {idx + 1}: {f.name}",
-                value=default_name,
-                key=f"pos_name_{f.name}_{idx}"
-            )
-            pos_names.append((f, name.strip() or default_name))
-
-        col_l, col_r = st.columns([1, 1])
-        replace = col_l.checkbox("Replace existing survey/logs", value=True)
-        load_btn = col_r.button("Load CSVs")
-
-        if load_btn:
-            if replace:
-                # Reset previous state
-                for p in ss["tmp_paths"]:
-                    try:
-                        # Cleanup files on supported OS; not critical if fails
-                        import os
-                        os.unlink(p)
-                    except Exception:
-                        pass
-                ss["tmp_paths"] = []
-                ss["logs"] = {}
-                ss["survey"] = None
-                ss["resi_df"] = None
-
-            added = 0
-            for f, pos_name in pos_names:
-                try:
-                    tmp_path = save_upload_to_tmp(f)
-                    ss["tmp_paths"].append(tmp_path)
-                    log_obj = pc.Log(path=tmp_path)
-                    ss["logs"][pos_name] = log_obj
-                    added += 1
-                except Exception as e:
-                    st.error(f"Failed to load {f.name}: {e}")
-
-            if added > 0:
-                st.success(f"Loaded {added} file(s) into logs.")
-            else:
-                st.warning("No files loaded. Please check the CSV format and try again.")
-
-    if ss["logs"]:
-        st.info(f"Current logs in session: {', '.join(ss['logs'].keys())}")
-
-# Build the Survey from available logs and display resi_summary in a dataframe
-ss_logs = ss.get("logs")
-
-if not ss_logs:
-    st.warning("No logs available to build the survey.")
+st.divider()
+st.subheader("Current Logs")
+if ss["logs"]:
+    st.write(f"{len(ss['logs'])} log(s) loaded:")
+    st.write(list(ss["logs"].keys()))
 else:
-    # Optionally pass periods/times if present in session state
-    possible_times = ss.get("times_kwarg") or ss.get("times")
-    times_arg = possible_times if isinstance(possible_times, dict) else None
+    st.info("No logs loaded yet.")
 
-    # Use the helper to construct the Survey
-    ss["survey"] = build_survey(log_map=ss_logs, times_kwarg=times_arg)
-
-    # Compute and display the residential summary
-    try:
-        resi_df = ss["survey"].resi_summary()
-    except Exception as e:
-        st.error(f"Failed to compute residential summary: {e}")
-    else:
-        with st.expander("Broadband Summary", expanded=True):
-            st.dataframe(resi_df, use_container_width=True)
-# ss["survey"] = build_survey()
-# for k in ss["logs"].keys():
-#     ss["survey"].add_log(ss["survey"], name="k")
-#     st.text(k)
-
-# st.text(type(ss["survey"]))
-# st.table(ss["survey"].resi_summary())
-
-# with st.expander("Broadband Summary", expanded=True):
-#     df = ss["survey"]._logs
-#     st.text(df)
-    #test
+st.subheader("Survey")
+st.success("Survey is initialized.")
