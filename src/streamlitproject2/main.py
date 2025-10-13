@@ -43,7 +43,7 @@ def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time
             raise TypeError(f"Expected datetime.time, got {type(t).__name__}")
         return t.hour, t.minute
 
-    return {
+    ss["times"] = {
         "day": to_hm(day_start),
         "evening": to_hm(evening_start),
         "night": to_hm(night_start),
@@ -98,6 +98,7 @@ with col_reset:
 survey = pc.Survey()
 for name, lg in ss["logs"].items():
     survey.add_log(data=lg, name=name)
+    survey.set_periods(times=ss["times"])
 
 # day_col, evening_col, night_col = st.columns([1, 1, 1])
 # with day_col:
@@ -110,11 +111,11 @@ with st.sidebar:
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
 
-# If times have changed:
-new_times = parse_times(day_start, evening_start, night_start)
-if new_times != ss["times"]:
-    ss["times"] = new_times
-    ss["survey"].set_periods(times=ss["times"])
+# # If times have changed:
+# new_times = parse_times(day_start, evening_start, night_start)
+# if new_times != ss["times"]:
+#     ss["times"] = new_times
+#     ss["survey"].set_periods(times=ss["times"])
 
 st.divider()
 # Compute and display resi_summary directly from current logs
@@ -140,7 +141,7 @@ with resi_container:
             st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
             if not ss["resi_df"].empty:
-                st.dataframe(ss["resi_df"], key="resi_df", use_container_width=True)
+                st.dataframe(ss["resi_df"], key="resi_df", width=True)
             else:
                 st.info("Run resi_summary() to see results here.")
         except Exception as e:
@@ -175,7 +176,7 @@ with leq_container:
             st.success(f"Leq spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
             if not ss["leq_df"].empty:
-                st.dataframe(ss["leq_df"], key="leq_df", use_container_width=True)
+                st.dataframe(ss["leq_df"], key="leq_df", width=True)
             else:
                 st.info("Run leq_spectra() to see results here.")
         except Exception as e:
@@ -195,7 +196,9 @@ lmax_button_container = st.container()
 
 
 with lmax_container:
-    if st.button("Run lmax_spectra()", key=4, disabled=len(ss["logs"]) == 0):
+    if not bool(ss["logs"]):
+        st.info("No logs loaded yet.")
+    else:
         try:
             # Build a Survey from the current logs right before running the summary
             # survey = ss["survey"]
@@ -208,7 +211,7 @@ with lmax_container:
             st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
             if not ss["lmax_df"].empty:
-                st.dataframe(ss["lmax_df"], key="lmax_df", use_container_width=True)
+                st.dataframe(ss["lmax_df"], key="lmax_df", width=True)
             else:
                 st.info("Run lmax_spectra() to see results here.")
         except Exception as e:
@@ -228,7 +231,9 @@ modal_button_container = st.container()
 
 
 with modal_container:
-    if st.button("Run modal()", key=6, disabled=len(ss["logs"]) == 0):
+    if not bool(ss["logs"]):
+        st.info("No logs loaded yet.")
+    else:
         try:
             # Build a Survey from the current logs right before running the summary
             # survey = ss["survey"]
@@ -241,7 +246,7 @@ with modal_container:
             st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
             if not ss["modal_df"].empty:
-                st.dataframe(ss["modal_df"], key="modal_df", use_container_width=True)
+                st.dataframe(ss["modal_df"], key="modal_df", width=True)
             else:
                 st.info("Run modal() to see results here.")
         except Exception as e:
