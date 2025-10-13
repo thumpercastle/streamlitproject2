@@ -16,13 +16,6 @@ ss.setdefault("leq_df", pd.DataFrame())
 ss.setdefault("lmax_df", pd.DataFrame())
 ss.setdefault("modal_df", pd.DataFrame())
 
-st.subheader("Upload CSV logs")
-uploaded_files = st.file_uploader(
-    "Choose one or more CSV files",
-    type=["csv"],
-    accept_multiple_files=True,
-)
-
 col_add, col_reset = st.columns([1, 1])
 
 def _cleanup_tmp_files(paths):
@@ -33,6 +26,12 @@ def _cleanup_tmp_files(paths):
             pass
 
 with col_add:
+    st.subheader("Upload CSV logs")
+    uploaded_files = st.file_uploader(
+        "Choose one or more CSV files",
+        type=["csv"],
+        accept_multiple_files=True,
+    )
     if st.button("Add uploaded files as Logs", disabled=not uploaded_files):
         added = 0
         for f in uploaded_files or []:
@@ -57,6 +56,12 @@ with col_add:
             st.success(f"Added {added} log(s).")
 
 with col_reset:
+    st.subheader("Current Logs")
+    if ss["logs"]:
+        st.write(f"{len(ss['logs'])} log(s) loaded:")
+        st.write(list(ss["logs"].keys()))
+    else:
+        st.info("No logs loaded yet.")
     if st.button("Reset"):
         _cleanup_tmp_files(ss.get("tmp_paths", []))
         ss["tmp_paths"] = []
@@ -64,13 +69,7 @@ with col_reset:
         ss["resi_df"] = pd.DataFrame()
         st.rerun()
 
-st.divider()
-st.subheader("Current Logs")
-if ss["logs"]:
-    st.write(f"{len(ss['logs'])} log(s) loaded:")
-    st.write(list(ss["logs"].keys()))
-else:
-    st.info("No logs loaded yet.")
+
 
 
 st.divider()
