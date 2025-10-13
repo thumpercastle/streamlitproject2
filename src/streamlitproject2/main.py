@@ -123,7 +123,7 @@ with col_run:
             try:
                 df = ss["survey"].resi_summary()  # Always a DataFrame
                 ss["resi_df"] = df
-                st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns. type {type(df)}")
                 # Show immediately on this run as well
                 st.dataframe(df, use_container_width=True)
             except Exception as e:
