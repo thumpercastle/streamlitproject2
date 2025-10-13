@@ -19,8 +19,9 @@ ss.setdefault("resi_df", pd.DataFrame())
 ss.setdefault("leq_df", pd.DataFrame())
 ss.setdefault("lmax_df", pd.DataFrame())
 ss.setdefault("modal_df", pd.DataFrame())
-ss.setdefault("times", {"day": (7, 0), "evening": (23, 0), "night": (23, 0)})
 ss.setdefault("survey", pc.Survey())
+
+times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)})
 
 col_add, col_reset = st.columns([1, 1])
 
@@ -43,7 +44,7 @@ def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time
             raise TypeError(f"Expected datetime.time, got {type(t).__name__}")
         return t.hour, t.minute
 
-    ss["times"] = {
+    times = {
         "day": to_hm(day_start),
         "evening": to_hm(evening_start),
         "night": to_hm(night_start),
@@ -98,7 +99,8 @@ with col_reset:
 survey = pc.Survey()
 for name, lg in ss["logs"].items():
     survey.add_log(data=lg, name=name)
-    survey.set_periods(times=ss["times"])
+
+survey.set_periods(times=times)
 
 # day_col, evening_col, night_col = st.columns([1, 1, 1])
 # with day_col:
@@ -110,6 +112,8 @@ with st.sidebar:
 # with night_col:
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
+    times = parse_times(day_start, evening_start, night_start)
+    survey.set_periods(times=times)
 
 # # If times have changed:
 # new_times = parse_times(day_start, evening_start, night_start)
