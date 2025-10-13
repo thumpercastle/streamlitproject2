@@ -12,6 +12,7 @@ ss = st.session_state
 ss.setdefault("tmp_paths", [])
 ss.setdefault("logs", {})          # Dict[str, pc.Log]
 ss.setdefault("resi_df", pd.DataFrame())
+ss.setdefault("lmax_df", pd.DataFrame())
 
 st.subheader("Upload CSV logs")
 uploaded_files = st.file_uploader(
@@ -98,4 +99,36 @@ with resi_container:
 with button_container:
     if st.button("Clear summary", disabled=ss["resi_df"].empty):
         ss["resi_df"] = pd.DataFrame()
+        st.info("Summary cleared.")
+
+
+# Compute and display resi_summary directly from current logs
+st.subheader("Lmax Spectra")
+lmax_container = st.container()
+lmax_button_container = st.container()
+
+
+with lmax_container:
+    if st.button("Run resi_summary()", disabled=len(ss["logs"]) == 0):
+        try:
+            # Build a Survey from the current logs right before running the summary
+            survey = pc.Survey()
+            for name, lg in ss["logs"].items():
+                survey.add_log(data=lg, name=name)
+
+            df = survey.lmax_spectra()  # Always a DataFrame per your note
+            ss["lmax_df"] = df
+
+            st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+            # Show cached result on rerun
+            if not ss["lmax_df"].empty:
+                st.dataframe(ss["lmax_df"], use_container_width=True)
+            else:
+                st.info("Run lmax_spectra() to see results here.")
+        except Exception as e:
+            st.error(f"Failed to compute lmax_spectra: {e}")
+
+with lmax_button_container:
+    if st.button("Clear summary", disabled=ss["lmax_df"].empty):
+        ss["lmax_df"] = pd.DataFrame()
         st.info("Summary cleared.")
