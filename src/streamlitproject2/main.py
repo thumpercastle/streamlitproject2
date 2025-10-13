@@ -97,7 +97,7 @@ with resi_container:
             st.error(f"Failed to compute resi_summary: {e}")
 
 with button_container:
-    if st.button("Clear summary", disabled=ss["resi_df"].empty):
+    if st.button("Clear summary", key=1 disabled=ss["resi_df"].empty):
         ss["resi_df"] = pd.DataFrame()
         st.info("Summary cleared.")
 
@@ -109,7 +109,7 @@ lmax_button_container = st.container()
 
 
 with lmax_container:
-    if st.button("Run lmax_spectra()", key=1, disabled=len(ss["logs"]) == 0):
+    if st.button("Run lmax_spectra()", key=2, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
@@ -129,6 +129,6 @@ with lmax_container:
             st.error(f"Failed to compute lmax_spectra: {e}")
 
 with lmax_button_container:
-    if st.button("Clear summary", disabled=ss["lmax_df"].empty):
+    if st.button("Clear summary", key=3, disabled=ss["lmax_df"].empty):
         ss["lmax_df"] = pd.DataFrame()
         st.info("Summary cleared.")
