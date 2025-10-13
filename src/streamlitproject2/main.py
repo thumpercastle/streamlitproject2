@@ -97,7 +97,7 @@ with resi_container:
             st.error(f"Failed to compute resi_summary: {e}")
 
 with button_container:
-    if st.button("Clear summary", key=1 disabled=ss["resi_df"].empty):
+    if st.button("Clear summary", key=1, disabled=ss["resi_df"].empty):
         ss["resi_df"] = pd.DataFrame()
         st.info("Summary cleared.")
 
