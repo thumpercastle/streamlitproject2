@@ -20,7 +20,7 @@ ss.setdefault("logs", {})                      # Dict[str, pc.Log]
 # Initialize Survey eagerly as requested
 if "survey" not in ss:
     ss["survey"] = pc.Survey()
-ss.setdefault("resi_df", pd.DataFrame)         # Cached summary (unused here)
+ss.setdefault("resi_df", pd.DataFrame())       # Cached resi_summary result
 ss.setdefault("periods_times", {               # Default times for set_periods()
     "day": (7, 0),
     "evening": (23, 0),
@@ -100,6 +100,7 @@ with col_reset:
         ss["tmp_paths"] = []
         ss["logs"] = {}
         ss["survey"] = pc.Survey()
+        ss["resi_df"] = pd.DataFrame()
         st.rerun()
 
 st.divider()
@@ -112,3 +113,26 @@ else:
 
 st.subheader("Survey")
 st.success("Survey is initialized.")
+
+# Run and display survey.resi_summary()
+st.subheader("Residential Summary (resi_summary)")
+col_run, col_clear = st.columns([1, 1])
+with col_run:
+    if st.button("Run resi_summary()"):
+        try:
+            result = ss["survey"].resi_summary()
+            # Ensure we store a DataFrame for display
+            ss["resi_df"] = result if isinstance(result, pd.DataFrame) else pd.DataFrame(result)
+            st.success("resi_summary computed.")
+        except Exception as e:
+            st.error(f"Failed to compute resi_summary: {e}")
+
+with col_clear:
+    if st.button("Clear summary", disabled=ss["resi_df"].empty):
+        ss["resi_df"] = pd.DataFrame()
+        st.info("Summary cleared.")
+
+if not ss["resi_df"].empty:
+    st.dataframe(ss["resi_df"], use_container_width=True)
+else:
+    st.info("Run resi_summary() to see results here.")
