@@ -1,46 +1,28 @@
 import streamlit as st
 import pycoustic as pc
 import pandas as pd
-import numpy as np
-
 import os
 import tempfile
-from typing import Dict, List
-
-import plotly.graph_objects as go
-
 
 st.set_page_config(page_title="pycoustic GUI", layout="wide")
 st.title("pycoustic Streamlit GUI")
 
-# Initialize session state
+# Session state
 ss = st.session_state
-ss.setdefault("tmp_paths", [])                 # List[str] for cleanup
-ss.setdefault("logs", {})                      # Dict[str, pc.Log]
-# Initialize Survey eagerly as requested
-if "survey" not in ss:
-    ss["survey"] = pc.Survey()
-ss.setdefault("resi_df", pd.DataFrame())       # Cached resi_summary result
-ss.setdefault("periods_times", {               # Default times for set_periods()
-    "day": (7, 0),
-    "evening": (23, 0),
-    "night": (23, 0),
-})
-ss.setdefault("lmax_n", 5)
-ss.setdefault("lmax_t", 30)
-ss.setdefault("extra_kwargs_raw", "{}")
+ss.setdefault("tmp_paths", [])
+ss.setdefault("logs", {})          # Dict[str, pc.Log]
+ss.setdefault("resi_df", pd.DataFrame())
 
 st.subheader("Upload CSV logs")
 uploaded_files = st.file_uploader(
     "Choose one or more CSV files",
     type=["csv"],
     accept_multiple_files=True,
-    help="Each CSV will be turned into a pycoustic.Log and added to the collection below.",
 )
 
-col_add, col_survey, col_reset = st.columns([1, 1, 1])
+col_add, col_reset = st.columns([1, 1])
 
-def _cleanup_tmp_files(paths: List[str]) -> None:
+def _cleanup_tmp_files(paths):
     for p in paths:
         try:
             os.remove(p)
@@ -51,7 +33,7 @@ with col_add:
     if st.button("Add uploaded files as Logs", disabled=not uploaded_files):
         added = 0
         for f in uploaded_files or []:
-            # Save uploaded CSV to a temporary file so pycoustic can read it
+            # Persist the uploaded file to a temporary path for pycoustic to read
             tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
             tmp.write(f.getbuffer())
             tmp.flush()
@@ -59,17 +41,11 @@ with col_add:
             ss["tmp_paths"].append(tmp.name)
 
             try:
-                # Prefer a simple, explicit constructor from CSV if available
-                if hasattr(pc.Log, "from_csv"):
-                    log = pc.Log.from_csv(tmp.name)  # type: ignore[attr-defined]
-                else:
-                    # Some versions may accept a path directly
-                    log = pc.Log(tmp.name)
+                log = pc.Log.from_csv(tmp.name)
             except Exception as e:
                 st.error(f"Failed to create Log from {f.name}: {e}")
                 continue
 
-            # Use the file stem as the key/name
             name = os.path.splitext(os.path.basename(f.name))[0]
             ss["logs"][name] = log
             added += 1
@@ -77,29 +53,11 @@ with col_add:
         if added:
             st.success(f"Added {added} log(s).")
 
-with col_survey:
-    if st.button("Build Survey from current Logs", disabled=len(ss["logs"]) == 0):
-        # Try to build in one go, fallback to adding with names
-        try:
-            try:
-                survey = pc.Survey(list(ss["logs"].values()))
-            except Exception:
-                survey = pc.Survey()
-                if hasattr(survey, "add"):
-                    for name, lg in ss["logs"].items():
-                        # Add with explicit name as requested
-                        survey.add(data=lg, name=name)  # type: ignore[attr-defined]
-            ss["survey"] = survey
-            st.success(f"Survey created with {len(ss['logs'])} log(s).")
-        except Exception as e:
-            st.error(f"Failed to create Survey: {e}")
-
 with col_reset:
     if st.button("Reset"):
         _cleanup_tmp_files(ss.get("tmp_paths", []))
         ss["tmp_paths"] = []
         ss["logs"] = {}
-        ss["survey"] = pc.Survey()
         ss["resi_df"] = pd.DataFrame()
         st.rerun()
 
@@ -111,30 +69,32 @@ if ss["logs"]:
 else:
     st.info("No logs loaded yet.")
 
-st.subheader("Survey")
-st.success("Survey is initialized.")
-
-# Run and display survey.resi_summary()
+# Compute and display resi_summary directly from current logs
 st.subheader("Residential Summary (resi_summary)")
 col_run, col_clear = st.columns([1, 1])
+
 with col_run:
-    if st.button("Run resi_summary()"):
-        with st.spinner("Computing resi_summary..."):
-            try:
-                df = ss["survey"].resi_summary()  # Always a DataFrame
-                ss["resi_df"] = df
-                st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns. type {type(df)}")
-                # Show immediately on this run as well
-                st.dataframe(df, use_container_width=True)
-            except Exception as e:
-                st.error(f"Failed to compute resi_summary: {e}")
+    if st.button("Run resi_summary()", disabled=len(ss["logs"]) == 0):
+        try:
+            # Build a Survey from the current logs right before running the summary
+            survey = pc.Survey()
+            for name, lg in ss["logs"].items():
+                survey.add(data=lg, name=name)
+
+            df = survey.resi_summary()  # Always a DataFrame per your note
+            ss["resi_df"] = df
+
+            st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+            st.dataframe(df, use_container_width=True)
+        except Exception as e:
+            st.error(f"Failed to compute resi_summary: {e}")
 
 with col_clear:
     if st.button("Clear summary", disabled=ss["resi_df"].empty):
         ss["resi_df"] = pd.DataFrame()
         st.info("Summary cleared.")
 
-# Also display cached result (e.g., on rerun after button click)
+# Show cached result on rerun
 if not ss["resi_df"].empty:
     st.dataframe(ss["resi_df"], use_container_width=True)
 else:
