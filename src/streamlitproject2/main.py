@@ -125,7 +125,6 @@ with resi_container:
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
-
             df = survey.resi_summary()  # Always a DataFrame per your note
             ss["resi_df"] = df
 
@@ -154,8 +153,7 @@ with leq_container:
     if st.button("Run leq_spectra()", key=2, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
-            survey = pc.Survey()
-            survey.set_periods(times=ss["times"])
+            survey = ss["survey"]
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
@@ -189,8 +187,7 @@ with lmax_container:
     if st.button("Run lmax_spectra()", key=4, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
-            survey = pc.Survey()
-            survey.set_periods(times=ss["times"])
+            survey = ss["survey"]
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
@@ -223,8 +220,7 @@ with modal_container:
     if st.button("Run modal()", key=6, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
-            survey = pc.Survey()
-            survey.set_periods(times=ss["times"])
+            survey = ss["survey"]
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
