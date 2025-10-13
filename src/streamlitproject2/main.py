@@ -124,7 +124,10 @@ button_container = st.container()
 
 
 with resi_container:
-    if st.button("Run resi_summary()", key=0, disabled=len(ss["logs"]) == 0):
+    if ss["logs"].empty:
+        st.info("No logs loaded yet.")
+    else:
+    # if st.button("Run resi_summary()", key=0, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
             # survey = ss["survey"]
@@ -156,7 +159,10 @@ leq_button_container = st.container()
 
 
 with leq_container:
-    if st.button("Run leq_spectra()", key=2, disabled=len(ss["logs"]) == 0):
+    if ss["logs"].empty:
+        st.info("No logs loaded yet.")
+    else:
+    # if st.button("Run leq_spectra()", key=2, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
             # survey = ss["survey"]
