@@ -119,10 +119,11 @@ with resi_container:
         try:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
+            survey.set_periods(times=ss["times"])
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
-            survey.set_periods(times=ss["times"])
+
             df = survey.resi_summary()  # Always a DataFrame per your note
             ss["resi_df"] = df
 
@@ -152,10 +153,11 @@ with leq_container:
         try:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
+            survey.set_periods(times=ss["times"])
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
-            survey.set_periods(times=ss["times"])
+
             df = survey.leq_spectra()  # Always a DataFrame per your note
             ss["leq_df"] = df
 
@@ -186,10 +188,10 @@ with lmax_container:
         try:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
+            survey.set_periods(times=ss["times"])
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
-            survey.set_periods(times=ss["times"])
             df = survey.lmax_spectra()  # Always a DataFrame per your note
             ss["lmax_df"] = df
 
@@ -220,10 +222,10 @@ with modal_container:
         try:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
+            survey.set_periods(times=ss["times"])
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
-            survey.set_periods(times=ss["times"])
             df = survey.modal()  # Always a DataFrame per your note
             ss["modal_df"] = df
 
