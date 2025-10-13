@@ -1,9 +1,11 @@
+import os
+import tempfile
+import datetime as dt
 import streamlit as st
 import pycoustic as pc
 import pandas as pd
-import os
-import tempfile
-#test
+
+
 st.set_page_config(page_title="pycoustic GUI", layout="wide")
 st.title("pycoustic Streamlit GUI")
 
@@ -15,6 +17,7 @@ ss.setdefault("resi_df", pd.DataFrame())
 ss.setdefault("leq_df", pd.DataFrame())
 ss.setdefault("lmax_df", pd.DataFrame())
 ss.setdefault("modal_df", pd.DataFrame())
+ss.setdefault("times", {"day": (7, 0), "evening": (23, 0), "night": (23, 0)})
 
 col_add, col_reset = st.columns([1, 1])
 
@@ -26,7 +29,7 @@ def _cleanup_tmp_files(paths):
             pass
 
 with col_add:
-    st.subheader("Upload CSV logs")
+    st.subheader("1. Upload CSV logs")
     uploaded_files = st.file_uploader(
         "Choose one or more CSV files",
         type=["csv"],
@@ -56,7 +59,7 @@ with col_add:
             st.success(f"Added {added} log(s).")
 
 with col_reset:
-    st.subheader("Current Logs")
+    st.subheader("2. Current Logs")
     if ss["logs"]:
         st.write(f"{len(ss['logs'])} log(s) loaded:")
         st.write(list(ss["logs"].keys()))
@@ -70,7 +73,14 @@ with col_reset:
         st.rerun()
 
 
-
+day_col, evening_col, night_col = st.columns([1, 1, 1])
+with day_col:
+    day_start = st.time_input("Set Day Period Start", dt.time(7, 00))
+with evening_col:
+    evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00))
+with night_col:
+    night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
+st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
 
 st.divider()
 # Compute and display resi_summary directly from current logs
