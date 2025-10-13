@@ -109,7 +109,7 @@ lmax_button_container = st.container()
 
 
 with lmax_container:
-    if st.button("Run resi_summary()", disabled=len(ss["logs"]) == 0):
+    if st.button("Run lmax_spectra()", disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
