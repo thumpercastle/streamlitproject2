@@ -71,8 +71,8 @@ else:
 
 # Compute and display resi_summary directly from current logs
 st.subheader("Residential Summary (resi_summary)")
-resi_container = st.container(stretch=True)
-button_container = st.container(stretch=True)
+resi_container = st.container()
+button_container = st.container()
 
 with button_container:
     if st.button("Clear summary", disabled=ss["resi_df"].empty):
