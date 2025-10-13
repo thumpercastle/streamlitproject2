@@ -164,7 +164,7 @@ with modal_container:
         except Exception as e:
             st.error(f"Failed to compute modal: {e}")
 
-with lmax_button_container:
+with modal_button_container:
     if st.button("Clear summary", key=5, disabled=ss["modal_df"].empty):
         ss["modal_df"] = pd.DataFrame()
         st.info("Summary cleared.")
