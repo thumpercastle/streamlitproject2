@@ -7,15 +7,13 @@ import tempfile
 st.set_page_config(page_title="pycoustic GUI", layout="wide")
 st.title("pycoustic Streamlit GUI")
 
-# Session state
 ss = st.session_state
 ss.setdefault("tmp_paths", [])
 ss.setdefault("logs", {})          # Dict[str, pc.Log]
 ss.setdefault("resi_df", pd.DataFrame())
 
-st.subheader("Upload CSV logs")
 uploaded_files = st.file_uploader(
-    "Choose one or more CSV files",
+    "Upload one or more CSV logs",
     type=["csv"],
     accept_multiple_files=True,
 )
@@ -33,7 +31,7 @@ with col_add:
     if st.button("Add uploaded files as Logs", disabled=not uploaded_files):
         added = 0
         for f in uploaded_files or []:
-            # Persist the uploaded file to a temporary path for pycoustic to read
+            # Persist the uploaded file to a temporary path
             tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
             tmp.write(f.getbuffer())
             tmp.flush()
@@ -41,6 +39,7 @@ with col_add:
             ss["tmp_paths"].append(tmp.name)
 
             try:
+                # Initialize Log using Log(), as requested
                 log = pc.Log(tmp.name)
             except Exception as e:
                 st.error(f"Failed to create Log from {f.name}: {e}")
@@ -64,29 +63,23 @@ with col_reset:
 st.divider()
 st.subheader("Current Logs")
 if ss["logs"]:
-    st.write(f"{len(ss['logs'])} log(s) loaded:")
     st.write(list(ss["logs"].keys()))
 else:
     st.info("No logs loaded yet.")
 
-# Compute and display resi_summary directly from current logs
-st.subheader("Residential Summary (resi_summary)")
+st.subheader("Residential Summary")
 col_run, col_clear = st.columns([1, 1])
 
 with col_run:
     if st.button("Run resi_summary()", disabled=len(ss["logs"]) == 0):
         try:
-            # Build a Survey from the current logs right before running the summary
+            # Build Survey and add logs using Survey.add_log()
             survey = pc.Survey()
             for name, lg in ss["logs"].items():
-                survey.add_log(data=lg, name=name)
+                survey.add_log(lg, name)
 
-            for k, v in survey._logs:
-                st.write(f"{k}: {v}")
-            df = survey.resi_summary()  # Always a DataFrame per your note
+            df = survey.resi_summary()  # Always returns a DataFrame
             ss["resi_df"] = df
-
-            st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             st.dataframe(df, use_container_width=True)
         except Exception as e:
             st.error(f"Failed to compute resi_summary: {e}")
@@ -96,8 +89,5 @@ with col_clear:
         ss["resi_df"] = pd.DataFrame()
         st.info("Summary cleared.")
 
-# Show cached result on rerun
 if not ss["resi_df"].empty:
     st.dataframe(ss["resi_df"], use_container_width=True)
-else:
-    st.info("Run resi_summary() to see results here.")
