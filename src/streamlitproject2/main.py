@@ -103,14 +103,11 @@ for name, lg in ss["logs"].items():
 
 survey.set_periods(times=times)
 
-# day_col, evening_col, night_col = st.columns([1, 1, 1])
-# with day_col:
+# Sidebar menu
 with st.sidebar:
     st.markdown("## Set Time Periods")
     day_start = st.time_input("Set Day Period Start", dt.time(7, 00))
-# with evening_col:
     evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00))
-# with night_col:
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
     times = parse_times(day_start, evening_start, night_start)
@@ -141,17 +138,13 @@ with resi_container:
         except Exception as e:
             st.error(f"Failed to compute resi_summary: {e}")
 
-with button_container:
-    if st.button("Clear summary", key=1, disabled=ss["resi_df"].empty):
-        ss["resi_df"] = pd.DataFrame()
-        st.info("Summary cleared.")
-
 st.divider()
-# # Compute and display resi_summary directly from current logs
-# st.subheader("Leq Spectra")
-# leq_container = st.container()
-# leq_button_container = st.container()
 
+
+# Compute and display resi_summary directly from current logs
+st.subheader("Leq Spectra")
+leq_container = st.container()
+leq_button_container = st.container()
 
 with leq_container:
     if not bool(ss["logs"]):
@@ -169,19 +162,14 @@ with leq_container:
                 st.info("Run leq_spectra() to see results here.")
         except Exception as e:
             st.error(f"Failed to compute leqspectra: {e}")
-#
-# with leq_button_container:
-#     if st.button("Clear summary", key=3, disabled=ss["leq_df"].empty):
-#         ss["leq_df"] = pd.DataFrame()
-#         st.info("Summary cleared.")
-
 
 st.divider()
+
+
 # Compute and display resi_summary directly from current logs
 st.subheader("Lmax Spectra")
 lmax_container = st.container()
 lmax_button_container = st.container()
-
 
 with lmax_container:
     if not bool(ss["logs"]):
@@ -199,18 +187,13 @@ with lmax_container:
         except Exception as e:
             st.error(f"Failed to compute lmax_spectra: {e}")
 
-# with lmax_button_container:
-#     if st.button("Clear summary", key=5, disabled=ss["lmax_df"].empty):
-#         ss["lmax_df"] = pd.DataFrame()
-#         st.info("Summary cleared.")
-
-
 st.divider()
+
+
 # Compute and display resi_summary directly from current logs
 st.subheader("Modal values")
 modal_container = st.container()
 modal_button_container = st.container()
-
 
 with modal_container:
     if not bool(ss["logs"]):
@@ -227,8 +210,3 @@ with modal_container:
                 st.info("Run modal() to see results here.")
         except Exception as e:
             st.error(f"Failed to compute modal: {e}")
-
-# with modal_button_container:
-#     if st.button("Clear summary", key=7, disabled=ss["modal_df"].empty):
-#         ss["modal_df"] = pd.DataFrame()
-#         st.info("Summary cleared.")
