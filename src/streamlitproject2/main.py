@@ -13,6 +13,7 @@ ss.setdefault("tmp_paths", [])
 ss.setdefault("logs", {})          # Dict[str, pc.Log]
 ss.setdefault("resi_df", pd.DataFrame())
 ss.setdefault("lmax_df", pd.DataFrame())
+ss.setdefault("modal_df", pd.DataFrame())
 
 st.subheader("Upload CSV logs")
 uploaded_files = st.file_uploader(
@@ -70,6 +71,8 @@ if ss["logs"]:
 else:
     st.info("No logs loaded yet.")
 
+
+st.divider()
 # Compute and display resi_summary directly from current logs
 st.subheader("Residential Summary (resi_summary)")
 resi_container = st.container()
@@ -101,7 +104,7 @@ with button_container:
         ss["resi_df"] = pd.DataFrame()
         st.info("Summary cleared.")
 
-
+st.divider()
 # Compute and display resi_summary directly from current logs
 st.subheader("Lmax Spectra")
 lmax_container = st.container()
@@ -131,4 +134,37 @@ with lmax_container:
 with lmax_button_container:
     if st.button("Clear summary", key=3, disabled=ss["lmax_df"].empty):
         ss["lmax_df"] = pd.DataFrame()
+        st.info("Summary cleared.")
+
+
+st.divider()
+# Compute and display resi_summary directly from current logs
+st.subheader("Modal values")
+modal_container = st.container()
+modal_button_container = st.container()
+
+
+with modal_container:
+    if st.button("Run modal()", key=4, disabled=len(ss["logs"]) == 0):
+        try:
+            # Build a Survey from the current logs right before running the summary
+            survey = pc.Survey()
+            for name, lg in ss["logs"].items():
+                survey.add_log(data=lg, name=name)
+
+            df = survey.modal()  # Always a DataFrame per your note
+            ss["modal_df"] = df
+
+            st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+            # Show cached result on rerun
+            if not ss["modal_df"].empty:
+                st.dataframe(ss["modal_df"], use_container_width=True)
+            else:
+                st.info("Run modal() to see results here.")
+        except Exception as e:
+            st.error(f"Failed to compute modal: {e}")
+
+with lmax_button_container:
+    if st.button("Clear summary", key=5, disabled=ss["modal_df"].empty):
+        ss["modal_df"] = pd.DataFrame()
         st.info("Summary cleared.")
