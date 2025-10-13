@@ -81,9 +81,6 @@ with col_run:
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
-
-            for k, v in survey._logs:
-                st.write(f"{k}: {v}")
             df = survey.resi_summary()  # Always a DataFrame per your note
             ss["resi_df"] = df
 
