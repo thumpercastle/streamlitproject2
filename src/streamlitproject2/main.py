@@ -12,6 +12,7 @@ ss = st.session_state
 ss.setdefault("tmp_paths", [])
 ss.setdefault("logs", {})          # Dict[str, pc.Log]
 ss.setdefault("resi_df", pd.DataFrame())
+ss.setdefault("leq_df", pd.DataFrame())
 ss.setdefault("lmax_df", pd.DataFrame())
 ss.setdefault("modal_df", pd.DataFrame())
 
