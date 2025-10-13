@@ -28,6 +28,25 @@ def _cleanup_tmp_files(paths):
         except Exception:
             pass
 
+def parse_times(day_start: time, evening_start: time, night_start: time) -> Dict[str, Tuple[int, int]]:
+    """
+    Convert datetime.time objects to a dict of (hour, minute) tuples.
+
+    Example output:
+        {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
+    """
+    def to_hm(t: time) -> Tuple[int, int]:
+        if not isinstance(t, time):
+            raise TypeError(f"Expected datetime.time, got {type(t).__name__}")
+        return t.hour, t.minute
+
+    return {
+        "day": to_hm(day_start),
+        "evening": to_hm(evening_start),
+        "night": to_hm(night_start),
+    }
+
+
 with col_add:
     st.subheader("1. Upload CSV logs")
     uploaded_files = st.file_uploader(
@@ -84,6 +103,8 @@ with st.sidebar:
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
 
+ss["times"] = parse_times(day_start, evening_start, night_start)
+
 st.divider()
 # Compute and display resi_summary directly from current logs
 st.subheader("Residential Summary (resi_summary)")
@@ -99,6 +120,7 @@ with resi_container:
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
+            survey.set_periods(times=ss["times"])
             df = survey.resi_summary()  # Always a DataFrame per your note
             ss["resi_df"] = df
 
@@ -131,6 +153,7 @@ with leq_container:
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
+            survey.set_periods(times=ss["times"])
             df = survey.leq_spectra()  # Always a DataFrame per your note
             ss["leq_df"] = df
 
@@ -164,6 +187,7 @@ with lmax_container:
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
+            survey.set_periods(times=ss["times"])
             df = survey.lmax_spectra()  # Always a DataFrame per your note
             ss["lmax_df"] = df
 
@@ -197,6 +221,7 @@ with modal_container:
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
+            survey.set_periods(times=ss["times"])
             df = survey.modal()  # Always a DataFrame per your note
             ss["modal_df"] = df
 
