@@ -71,9 +71,15 @@ else:
 
 # Compute and display resi_summary directly from current logs
 st.subheader("Residential Summary (resi_summary)")
-col_run, col_clear = st.columns([1, 1])
+resi_container = st.container(stretch=True)
+button_container = st.container(stretch=True)
 
-with col_run:
+with button_container:
+    if st.button("Clear summary", disabled=ss["resi_df"].empty):
+        ss["resi_df"] = pd.DataFrame()
+        st.info("Summary cleared.")
+
+with resi_container:
     if st.button("Run resi_summary()", disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
@@ -93,8 +99,4 @@ with col_run:
         except Exception as e:
             st.error(f"Failed to compute resi_summary: {e}")
 
-with col_clear:
-    if st.button("Clear summary", disabled=ss["resi_df"].empty):
-        ss["resi_df"] = pd.DataFrame()
-        st.info("Summary cleared.")
 
