@@ -95,7 +95,7 @@ with col_reset:
         st.rerun()
 
 # Build the survey
-survey = ss["survey"]
+survey = pc.Survey()
 for name, lg in ss["logs"].items():
     survey.add_log(data=lg, name=name)
 
