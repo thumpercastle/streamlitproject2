@@ -85,7 +85,11 @@ with col_run:
             ss["resi_df"] = df
 
             st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-            st.dataframe(df, use_container_width=True)
+            # Show cached result on rerun
+            if not ss["resi_df"].empty:
+                st.dataframe(ss["resi_df"], use_container_width=True)
+            else:
+                st.info("Run resi_summary() to see results here.")
         except Exception as e:
             st.error(f"Failed to compute resi_summary: {e}")
 
@@ -94,8 +98,3 @@ with col_clear:
         ss["resi_df"] = pd.DataFrame()
         st.info("Summary cleared.")
 
-# Show cached result on rerun
-if not ss["resi_df"].empty:
-    st.dataframe(ss["resi_df"], use_container_width=True)
-else:
-    st.info("Run resi_summary() to see results here.")
