@@ -26,8 +26,8 @@ ss.setdefault("periods_times", {               # Default times for set_periods()
     "evening": (23, 0),
     "night": (23, 0),
 })
-ss.setdefault("lmax_n", 10)
-ss.setdefault("lmax_t", 2)
+ss.setdefault("lmax_n", 5)
+ss.setdefault("lmax_t", 30)
 ss.setdefault("extra_kwargs_raw", "{}")
 
 st.subheader("Upload CSV logs")
@@ -119,19 +119,22 @@ st.subheader("Residential Summary (resi_summary)")
 col_run, col_clear = st.columns([1, 1])
 with col_run:
     if st.button("Run resi_summary()"):
-        try:
-            result = ss["survey"].resi_summary()
-            # Ensure we store a DataFrame for display
-            ss["resi_df"] = result if isinstance(result, pd.DataFrame) else pd.DataFrame(result)
-            st.success("resi_summary computed.")
-        except Exception as e:
-            st.error(f"Failed to compute resi_summary: {e}")
+        with st.spinner("Computing resi_summary..."):
+            try:
+                df = ss["survey"].resi_summary()  # Always a DataFrame
+                ss["resi_df"] = df
+                st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                # Show immediately on this run as well
+                st.dataframe(df, use_container_width=True)
+            except Exception as e:
+                st.error(f"Failed to compute resi_summary: {e}")
 
 with col_clear:
     if st.button("Clear summary", disabled=ss["resi_df"].empty):
         ss["resi_df"] = pd.DataFrame()
         st.info("Summary cleared.")
 
+# Also display cached result (e.g., on rerun after button click)
 if not ss["resi_df"].empty:
     st.dataframe(ss["resi_df"], use_container_width=True)
 else:
