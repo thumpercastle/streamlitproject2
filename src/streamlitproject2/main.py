@@ -110,9 +110,11 @@ with st.sidebar:
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
 
-ss["times"] = parse_times(day_start, evening_start, night_start)
-ss["survey"].set_periods(times=ss["times"])
-
+# If times have changed:
+new_times = parse_times(day_start, evening_start, night_start)
+if new_times != ss["times"]:
+    ss["times"] = new_times
+    ss["survey"].set_periods(times=ss["times"])
 
 st.divider()
 # Compute and display resi_summary directly from current logs
