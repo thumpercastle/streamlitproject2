@@ -94,6 +94,10 @@ with col_reset:
         ss["resi_df"] = pd.DataFrame()
         st.rerun()
 
+# Build the survey
+survey = ss["survey"]
+for name, lg in ss["logs"].items():
+    survey.add_log(data=lg, name=name)
 
 # day_col, evening_col, night_col = st.columns([1, 1, 1])
 # with day_col:
@@ -121,9 +125,9 @@ with resi_container:
     if st.button("Run resi_summary()", key=0, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
-            survey = ss["survey"]
-            for name, lg in ss["logs"].items():
-                survey.add_log(data=lg, name=name)
+            # survey = ss["survey"]
+            # for name, lg in ss["logs"].items():
+            #     survey.add_log(data=lg, name=name)
 
             df = survey.resi_summary()  # Always a DataFrame per your note
             ss["resi_df"] = df
@@ -153,10 +157,9 @@ with leq_container:
     if st.button("Run leq_spectra()", key=2, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
-            survey = ss["survey"]
-            for name, lg in ss["logs"].items():
-                survey.add_log(data=lg, name=name)
-
+            # survey = ss["survey"]
+            # for name, lg in ss["logs"].items():
+            #     survey.add_log(data=lg, name=name)
 
             df = survey.leq_spectra()  # Always a DataFrame per your note
             ss["leq_df"] = df
@@ -187,9 +190,9 @@ with lmax_container:
     if st.button("Run lmax_spectra()", key=4, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
-            survey = ss["survey"]
-            for name, lg in ss["logs"].items():
-                survey.add_log(data=lg, name=name)
+            # survey = ss["survey"]
+            # for name, lg in ss["logs"].items():
+            #     survey.add_log(data=lg, name=name)
 
             df = survey.lmax_spectra()  # Always a DataFrame per your note
             ss["lmax_df"] = df
@@ -220,9 +223,9 @@ with modal_container:
     if st.button("Run modal()", key=6, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
-            survey = ss["survey"]
-            for name, lg in ss["logs"].items():
-                survey.add_log(data=lg, name=name)
+            # survey = ss["survey"]
+            # for name, lg in ss["logs"].items():
+            #     survey.add_log(data=lg, name=name)
 
             df = survey.modal()  # Always a DataFrame per your note
             ss["modal_df"] = df
