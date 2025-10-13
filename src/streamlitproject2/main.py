@@ -113,6 +113,7 @@ with st.sidebar:
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
     times = parse_times(day_start, evening_start, night_start)
+    st.text(f"Times: {times}")
     survey.set_periods(times=times)
 
 # # If times have changed:
