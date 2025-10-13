@@ -20,6 +20,7 @@ ss.setdefault("leq_df", pd.DataFrame())
 ss.setdefault("lmax_df", pd.DataFrame())
 ss.setdefault("modal_df", pd.DataFrame())
 ss.setdefault("times", {"day": (7, 0), "evening": (23, 0), "night": (23, 0)})
+ss.setdefault("survey", pc.Survey())
 
 col_add, col_reset = st.columns([1, 1])
 
@@ -106,6 +107,8 @@ with st.sidebar:
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
 
 ss["times"] = parse_times(day_start, evening_start, night_start)
+ss["survey"].set_periods(times=ss["times"])
+
 
 st.divider()
 # Compute and display resi_summary directly from current logs
@@ -118,8 +121,7 @@ with resi_container:
     if st.button("Run resi_summary()", key=0, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
-            survey = pc.Survey()
-            survey.set_periods(times=ss["times"])
+            survey = ss["survey"]
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
 
