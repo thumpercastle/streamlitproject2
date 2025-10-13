@@ -41,7 +41,7 @@ with col_add:
             ss["tmp_paths"].append(tmp.name)
 
             try:
-                log = pc.Log.from_csv(tmp.name)
+                log = pc.Log(tmp.name)
             except Exception as e:
                 st.error(f"Failed to create Log from {f.name}: {e}")
                 continue
