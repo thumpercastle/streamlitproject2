@@ -4,6 +4,8 @@ import datetime as dt
 import streamlit as st
 import pycoustic as pc
 import pandas as pd
+from typing import Dict, Tuple
+
 
 
 st.set_page_config(page_title="pycoustic GUI", layout="wide")
@@ -28,15 +30,15 @@ def _cleanup_tmp_files(paths):
         except Exception:
             pass
 
-def parse_times(day_start: time, evening_start: time, night_start: time) -> Dict[str, Tuple[int, int]]:
+def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time) -> Dict[str, Tuple[int, int]]:
     """
     Convert datetime.time objects to a dict of (hour, minute) tuples.
 
     Example output:
         {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
     """
-    def to_hm(t: time) -> Tuple[int, int]:
-        if not isinstance(t, time):
+    def to_hm(t: dt.time) -> Tuple[int, int]:
+        if not isinstance(t, dt.time):
             raise TypeError(f"Expected datetime.time, got {type(t).__name__}")
         return t.hour, t.minute
 
