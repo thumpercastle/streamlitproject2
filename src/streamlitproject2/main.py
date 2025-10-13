@@ -80,7 +80,6 @@ with col_run:
             survey = pc.Survey()
             for name, lg in ss["logs"].items():
                 survey.add_log(data=lg, name=name)
-                print(survey.resi_summary().shape)
 
 
             for k, v in survey._logs:
