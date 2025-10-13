@@ -114,14 +114,8 @@ with st.sidebar:
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
     times = parse_times(day_start, evening_start, night_start)
-    st.text(f"Times: {times}")
     survey.set_periods(times=times)
 
-# # If times have changed:
-# new_times = parse_times(day_start, evening_start, night_start)
-# if new_times != ss["times"]:
-#     ss["times"] = new_times
-#     ss["survey"].set_periods(times=ss["times"])
 
 st.divider()
 # Compute and display resi_summary directly from current logs
@@ -134,13 +128,7 @@ with resi_container:
     if not bool(ss["logs"]):
         st.info("No logs loaded yet.")
     else:
-    # if st.button("Run resi_summary()", key=0, disabled=len(ss["logs"]) == 0):
         try:
-            # Build a Survey from the current logs right before running the summary
-            # survey = ss["survey"]
-            # for name, lg in ss["logs"].items():
-            #     survey.add_log(data=lg, name=name)
-
             df = survey.resi_summary()  # Always a DataFrame per your note
             ss["resi_df"] = df
 
@@ -159,23 +147,17 @@ with button_container:
         st.info("Summary cleared.")
 
 st.divider()
-# Compute and display resi_summary directly from current logs
-st.subheader("Leq Spectra")
-leq_container = st.container()
-leq_button_container = st.container()
+# # Compute and display resi_summary directly from current logs
+# st.subheader("Leq Spectra")
+# leq_container = st.container()
+# leq_button_container = st.container()
 
 
 with leq_container:
     if not bool(ss["logs"]):
         st.info("No logs loaded yet.")
     else:
-    # if st.button("Run leq_spectra()", key=2, disabled=len(ss["logs"]) == 0):
         try:
-            # Build a Survey from the current logs right before running the summary
-            # survey = ss["survey"]
-            # for name, lg in ss["logs"].items():
-            #     survey.add_log(data=lg, name=name)
-
             df = survey.leq_spectra()  # Always a DataFrame per your note
             ss["leq_df"] = df
 
@@ -187,11 +169,11 @@ with leq_container:
                 st.info("Run leq_spectra() to see results here.")
         except Exception as e:
             st.error(f"Failed to compute leqspectra: {e}")
-
-with leq_button_container:
-    if st.button("Clear summary", key=3, disabled=ss["leq_df"].empty):
-        ss["leq_df"] = pd.DataFrame()
-        st.info("Summary cleared.")
+#
+# with leq_button_container:
+#     if st.button("Clear summary", key=3, disabled=ss["leq_df"].empty):
+#         ss["leq_df"] = pd.DataFrame()
+#         st.info("Summary cleared.")
 
 
 st.divider()
@@ -206,14 +188,8 @@ with lmax_container:
         st.info("No logs loaded yet.")
     else:
         try:
-            # Build a Survey from the current logs right before running the summary
-            # survey = ss["survey"]
-            # for name, lg in ss["logs"].items():
-            #     survey.add_log(data=lg, name=name)
-
             df = survey.lmax_spectra()  # Always a DataFrame per your note
             ss["lmax_df"] = df
-
             st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
             if not ss["lmax_df"].empty:
@@ -223,10 +199,10 @@ with lmax_container:
         except Exception as e:
             st.error(f"Failed to compute lmax_spectra: {e}")
 
-with lmax_button_container:
-    if st.button("Clear summary", key=5, disabled=ss["lmax_df"].empty):
-        ss["lmax_df"] = pd.DataFrame()
-        st.info("Summary cleared.")
+# with lmax_button_container:
+#     if st.button("Clear summary", key=5, disabled=ss["lmax_df"].empty):
+#         ss["lmax_df"] = pd.DataFrame()
+#         st.info("Summary cleared.")
 
 
 st.divider()
@@ -241,14 +217,8 @@ with modal_container:
         st.info("No logs loaded yet.")
     else:
         try:
-            # Build a Survey from the current logs right before running the summary
-            # survey = ss["survey"]
-            # for name, lg in ss["logs"].items():
-            #     survey.add_log(data=lg, name=name)
-
             df = survey.modal()  # Always a DataFrame per your note
             ss["modal_df"] = df
-
             st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
             if not ss["modal_df"].empty:
@@ -258,7 +228,7 @@ with modal_container:
         except Exception as e:
             st.error(f"Failed to compute modal: {e}")
 
-with modal_button_container:
-    if st.button("Clear summary", key=7, disabled=ss["modal_df"].empty):
-        ss["modal_df"] = pd.DataFrame()
-        st.info("Summary cleared.")
+# with modal_button_container:
+#     if st.button("Clear summary", key=7, disabled=ss["modal_df"].empty):
+#         ss["modal_df"] = pd.DataFrame()
+#         st.info("Summary cleared.")
