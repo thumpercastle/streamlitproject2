@@ -106,13 +106,46 @@ with button_container:
 
 st.divider()
 # Compute and display resi_summary directly from current logs
+st.subheader("Leq Spectra")
+leq_container = st.container()
+leq_button_container = st.container()
+
+
+with leq_container:
+    if st.button("Run leq_spectra()", key=2, disabled=len(ss["logs"]) == 0):
+        try:
+            # Build a Survey from the current logs right before running the summary
+            survey = pc.Survey()
+            for name, lg in ss["logs"].items():
+                survey.add_log(data=lg, name=name)
+
+            df = survey.leq_spectra()  # Always a DataFrame per your note
+            ss["leq_df"] = df
+
+            st.success(f"Leq spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+            # Show cached result on rerun
+            if not ss["leq_df"].empty:
+                st.dataframe(ss["leq_df"], use_container_width=True)
+            else:
+                st.info("Run leq_spectra() to see results here.")
+        except Exception as e:
+            st.error(f"Failed to compute leqspectra: {e}")
+
+with leq_button_container:
+    if st.button("Clear summary", key=3, disabled=ss["leq_df"].empty):
+        ss["leq_df"] = pd.DataFrame()
+        st.info("Summary cleared.")
+
+
+st.divider()
+# Compute and display resi_summary directly from current logs
 st.subheader("Lmax Spectra")
 lmax_container = st.container()
 lmax_button_container = st.container()
 
 
 with lmax_container:
-    if st.button("Run lmax_spectra()", key=2, disabled=len(ss["logs"]) == 0):
+    if st.button("Run lmax_spectra()", key=4, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
@@ -132,7 +165,7 @@ with lmax_container:
             st.error(f"Failed to compute lmax_spectra: {e}")
 
 with lmax_button_container:
-    if st.button("Clear summary", key=3, disabled=ss["lmax_df"].empty):
+    if st.button("Clear summary", key=5, disabled=ss["lmax_df"].empty):
         ss["lmax_df"] = pd.DataFrame()
         st.info("Summary cleared.")
 
@@ -145,7 +178,7 @@ modal_button_container = st.container()
 
 
 with modal_container:
-    if st.button("Run modal()", key=4, disabled=len(ss["logs"]) == 0):
+    if st.button("Run modal()", key=6, disabled=len(ss["logs"]) == 0):
         try:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
@@ -165,6 +198,6 @@ with modal_container:
             st.error(f"Failed to compute modal: {e}")
 
 with modal_button_container:
-    if st.button("Clear summary", key=5, disabled=ss["modal_df"].empty):
+    if st.button("Clear summary", key=7, disabled=ss["modal_df"].empty):
         ss["modal_df"] = pd.DataFrame()
         st.info("Summary cleared.")
