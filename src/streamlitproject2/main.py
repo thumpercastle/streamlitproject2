@@ -79,7 +79,7 @@ with col_run:
             # Build a Survey from the current logs right before running the summary
             survey = pc.Survey()
             for name, lg in ss["logs"].items():
-                survey.add(data=lg, name=name)
+                survey.add_log(data=lg, name=name)
 
             df = survey.resi_summary()  # Always a DataFrame per your note
             ss["resi_df"] = df
