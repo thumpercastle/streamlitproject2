@@ -21,7 +21,7 @@ ss.setdefault("lmax_df", pd.DataFrame())
 ss.setdefault("modal_df", pd.DataFrame())
 ss.setdefault("survey", pc.Survey())
 
-times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)})
+times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
 
 col_add, col_reset = st.columns([1, 1])
 
