@@ -105,7 +105,8 @@ survey.set_periods(times=times)
 
 # Sidebar menu
 with st.sidebar:
-    st.markdown("### Survey Config")
+    st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
+    st.markdown("# Survey Config")
     st.markdown("## Set Time Periods")
     day_start = st.time_input("Set Day Period Start", dt.time(7, 00))
     evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00))
@@ -194,7 +195,7 @@ st.divider()
 
 # Compute and display resi_summary directly from current logs
 st.subheader("Modal values")
-st.text("Note: Ignore the 'Date' column")
+st.text("Note: Ignore the 'Date' column.")
 modal_container = st.container()
 modal_button_container = st.container()
 
