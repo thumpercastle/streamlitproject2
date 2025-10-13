@@ -44,11 +44,12 @@ def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time
             raise TypeError(f"Expected datetime.time, got {type(t).__name__}")
         return t.hour, t.minute
 
-    times = {
+    t = {
         "day": to_hm(day_start),
         "evening": to_hm(evening_start),
         "night": to_hm(night_start),
     }
+    return t
 
 
 with col_add:
