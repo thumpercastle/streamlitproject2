@@ -157,7 +157,7 @@ with st.sidebar:
     st.download_button(
         label="Download CSV",
         data=csv,
-        file_name="data.csv",
+        file_name="pycoustic.csv",
         mime="text/csv",
         icon=":material/download:",
     )

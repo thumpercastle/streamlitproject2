@@ -846,14 +846,14 @@ test = ["cffi", "hypothesis", "pandas", "pytest", "pytz"]
 
 [[package]]
 name = "pycoustic"
-version = "0.1.15"
+version = "0.1.16"
 description = ""
 optional = false
 python-versions = "<=3.13,>=3.11"
 groups = ["main"]
 files = [
-    {file = "pycoustic-0.1.15-py3-none-any.whl", hash = "sha256:ac1d174bd02cd1b6f9bad67da46015ff87b06d1eb432ce3f49306f2f147f5367"},
-    {file = "pycoustic-0.1.15.tar.gz", hash = "sha256:5a9ecc5bb760bbb24d5c73544de447bc76a64e01d27253ce6ebd73269d205f45"},
+    {file = "pycoustic-0.1.16-py3-none-any.whl", hash = "sha256:75e378966975a29edc5335cc1a950e9a50363fd55b7588861a22d38f93d85add"},
+    {file = "pycoustic-0.1.16.tar.gz", hash = "sha256:a64ffdb659a83013aaaa4065ab9f29827672d1c5f5716bd618602410bf710a91"},
 ]
 
 [package.dependencies]
@@ -1318,4 +1318,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<=3.13,>=3.11"
-content-hash = "754672a885f5f7ee3b55a165c22d3d6db8c3b5e6e3e383eb3c9c6268333786cb"
+content-hash = "2539265cf10a294ac5be0e9a4d99e819581a48c569809d6f29ce3d6e5e4bef57"
