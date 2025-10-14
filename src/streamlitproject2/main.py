@@ -250,14 +250,14 @@ with modal_container:
         day_t = st.selectbox(
             label="Desired time-resolution of Daytime modal.",
             options=[1, 2, 5, 10, 15, 30, 60, 120],
-            index=-2
+            index=6
         )
         day_t = str(day_t) + "min"
     with col_eve_t:
         eve_t = st.selectbox(
             label="Desired time-resolution of Evening modal.",
             options=[1, 2, 5, 10, 15, 30, 60, 120],
-            index=-2
+            index=6
         )
         eve_t = str(eve_t) + "min"
     with col_night_t:
@@ -272,7 +272,7 @@ with modal_container:
     else:
         try:
             df = survey.modal(
-                cols=par,
+                cols=par_tup,
                 by_date=by_date,
                 day_t=day_t,
                 evening_t=eve_t,
