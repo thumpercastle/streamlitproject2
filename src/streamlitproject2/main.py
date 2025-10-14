@@ -148,172 +148,188 @@ with st.sidebar:
 st.divider()
 #TODO: Implement tabs with graphs for each log.
 
-# Compute and display resi_summary directly from current logs
-st.subheader("Broadband Summary")
-resi_container = st.container()
+# Line 151: create tabs dynamically for each log in ss["logs"]
+log_items = list(ss.get("logs", {}).items())
+if not log_items:
+    st.info("No logs loaded yet.")
+else:
+    tab_labels = [name for name, _ in log_items]
+    tab_labels.insert(0, "Overview")
+    tabs = st.tabs(tab_labels)
+    for (name, log), tab in zip(log_items, tabs):
+        with tab:
+            # Replace the content below with what you want to display per log
+            st.caption(f"Log: {name}")
+            # e.g., render per-log details, controls, or dataframes here
+            # st.dataframe(log.to_dataframe())  # Example placeholder if available
 
-with resi_container:
-    if not bool(ss["logs"]):
-        st.info("No logs loaded yet.")
-    else:
-        try:
-            df = survey.resi_summary()  # Always a DataFrame per your note
-            ss["resi_df"] = df
+with st.tabs(["Overview"]):
+    # Compute and display resi_summary directly from current logs
+    st.subheader("Broadband Summary")
+    resi_container = st.container()
 
-            st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-            # Show cached result on rerun
-            if not ss["resi_df"].empty:
-                st.dataframe(ss["resi_df"], key="resi_df", width="stretch")
-            else:
-                st.info("Run resi_summary() to see results here.")
-        except Exception as e:
-            st.error(f"Failed to compute resi_summary: {e}")
+    with resi_container:
+        if not bool(ss["logs"]):
+            st.info("No logs loaded yet.")
+        else:
+            try:
+                df = survey.resi_summary()  # Always a DataFrame per your note
+                ss["resi_df"] = df
 
-st.divider()
+                st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                # Show cached result on rerun
+                if not ss["resi_df"].empty:
+                    st.dataframe(ss["resi_df"], key="resi_df", width="stretch")
+                else:
+                    st.info("Run resi_summary() to see results here.")
+            except Exception as e:
+                st.error(f"Failed to compute resi_summary: {e}")
 
-
-# Compute and display resi_summary directly from current logs
-st.subheader("Leq Spectra")
-st.text(
-    "This function computes the combined Leq for the period in question over the entire survey (e.g. all days combined).")
-leq_container = st.container()
-
-with leq_container:
-    if not bool(ss["logs"]):
-        st.info("No logs loaded yet.")
-    else:
-        try:
-            df = survey.leq_spectra()  # Always a DataFrame per your note
-            ss["leq_df"] = df
-
-            st.success(f"Leq spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-            # Show cached result on rerun
-            if not ss["leq_df"].empty:
-                st.dataframe(ss["leq_df"], key="leq_df", width="stretch")
-            else:
-                st.info("Run leq_spectra() to see results here.")
-        except Exception as e:
-            st.error(f"Failed to compute leqspectra: {e}")
-
-st.divider()
+    st.divider()
 
 
-# Compute and display resi_summary directly from current logs
-st.subheader("Lmax Spectra")
-st.text("Note: the timestamp in the 'Date' column shows the date when the night-time period started, not the date on which the lmax occurred. e.g. 2025-08-14 00:14 lmax would have occured in the early hours of 2025-08-15.")
-st.text("This function works by selecting the highest A-weighted value, and the corresponding octave band data.")
-lmax_container = st.container()
+    # Compute and display resi_summary directly from current logs
+    st.subheader("Leq Spectra")
+    st.text(
+        "This function computes the combined Leq for the period in question over the entire survey (e.g. all days combined).")
+    leq_container = st.container()
 
-with lmax_container:
-    col_nth, col_t, col_per = st.columns([1, 1, 1])
-    with col_nth:
-        nth = st.number_input(
-            label="nth-highest Lmax",
-            min_value=1,
-            max_value=60,
-            value=10,
-            step=1,
-        )
-    with col_t:
-        t_int = st.number_input(
-            label="Desired time-resolution of Lmax (min).",
-            min_value=1,
-            max_value=60,
-            value=2,
-            step=1,
-        )
-        t_str = str(t_int) + "min"
-    with col_per:
-        per = st.selectbox(
-            label="Which period to use for Lmax?",
-            options=["Days", "Evenings", "Nights"],
-            index=2
-        )
-        per = per.lower()
-    if not bool(ss["logs"]):
-        st.info("No logs loaded yet.")
-    else:
-        try:
-            df = survey.lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
-            ss["lmax_df"] = df
-            st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-            # Show cached result on rerun
-            # Notify user if evening period disabled
-            if per == "evenings" and times["evening"] == times["night"]:
-                st.info("Evenings are currently disabled. Enable them by setting the times in the sidebar.")
-            if not ss["lmax_df"].empty:
-                st.dataframe(ss["lmax_df"], key="lmax_df", width="stretch")
-            else:
-                st.info("Run lmax_spectra() to see results here.")
-        except Exception as e:
-            st.error(f"Failed to compute lmax_spectra: {e}")
+    with leq_container:
+        if not bool(ss["logs"]):
+            st.info("No logs loaded yet.")
+        else:
+            try:
+                df = survey.leq_spectra()  # Always a DataFrame per your note
+                ss["leq_df"] = df
 
-st.divider()
+                st.success(f"Leq spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                # Show cached result on rerun
+                if not ss["leq_df"].empty:
+                    st.dataframe(ss["leq_df"], key="leq_df", width="stretch")
+                else:
+                    st.info("Run leq_spectra() to see results here.")
+            except Exception as e:
+                st.error(f"Failed to compute leqspectra: {e}")
+
+    st.divider()
 
 
-# Compute and display resi_summary directly from current logs
-st.subheader("Modal values")
-st.text("Note: Ignore the 'Date' label.")
-modal_container = st.container()
+    # Compute and display resi_summary directly from current logs
+    st.subheader("Lmax Spectra")
+    st.text("Note: the timestamp in the 'Date' column shows the date when the night-time period started, not the date on which the lmax occurred. e.g. 2025-08-14 00:14 lmax would have occured in the early hours of 2025-08-15.")
+    st.text("This function works by selecting the highest A-weighted value, and the corresponding octave band data.")
+    lmax_container = st.container()
 
-with modal_container:
-    col_cols, col_day_t, col_eve_t, col_night_t = st.columns([1, 1, 1, 1])
-    with col_cols:
-        par = st.selectbox(
-            label="Which parameter to use for modal?",
-            options=["L90", "Leq", "Lmax"],
-            index=0
-        )
-        par_tup = (par, "A")
-    # TODO:
-    # with col_by_date:
-    #     by_date = st.selectbox(
-    #         label="Overall modal, or by date?",
-    #         options=["Overall", "By date"],
-    #         index=0
-    #     )
-    #     if by_date == "By date":
-    #         by_date = True
-    #     else:
-    #         by_date = False
-    with col_day_t:
-        day_t = st.selectbox(
-            label="Desired time-resolution of Daytime modal.",
-            options=[1, 2, 5, 10, 15, 30, 60, 120],
-            index=6
-        )
-        day_t = str(day_t) + "min"
-    with col_eve_t:
-        eve_t = st.selectbox(
-            label="Desired time-resolution of Evening modal.",
-            options=[1, 2, 5, 10, 15, 30, 60, 120],
-            index=6
-        )
-        eve_t = str(eve_t) + "min"
-    with col_night_t:
-        night_t = st.selectbox(
-            label="Desired time-resolution of Night modal.",
-            options=[1, 2, 5, 10, 15, 30, 60, 120],
-            index=4
-        )
-        night_t = str(night_t) + "min"
-    if not bool(ss["logs"]):
-        st.info("No logs loaded yet.")
-    else:
-        try:
-            df = survey.modal(
-                cols=par_tup,
-                by_date=False,
-                day_t=day_t,
-                evening_t=eve_t,
-                night_t=night_t
-            )  # Always a DataFrame per your note
-            ss["modal_df"] = df
-            st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-            # Show cached result on rerun
-            if not ss["modal_df"].empty:
-                st.dataframe(ss["modal_df"], key="modal_df", width="stretch")
-            else:
-                st.info("Run modal() to see results here.")
-        except Exception as e:
-            st.error(f"Failed to compute modal: {e}")
+    with lmax_container:
+        col_nth, col_t, col_per = st.columns([1, 1, 1])
+        with col_nth:
+            nth = st.number_input(
+                label="nth-highest Lmax",
+                min_value=1,
+                max_value=60,
+                value=10,
+                step=1,
+            )
+        with col_t:
+            t_int = st.number_input(
+                label="Desired time-resolution of Lmax (min).",
+                min_value=1,
+                max_value=60,
+                value=2,
+                step=1,
+            )
+            t_str = str(t_int) + "min"
+        with col_per:
+            per = st.selectbox(
+                label="Which period to use for Lmax?",
+                options=["Days", "Evenings", "Nights"],
+                index=2
+            )
+            per = per.lower()
+        if not bool(ss["logs"]):
+            st.info("No logs loaded yet.")
+        else:
+            try:
+                df = survey.lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
+                ss["lmax_df"] = df
+                st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                # Show cached result on rerun
+                # Notify user if evening period disabled
+                if per == "evenings" and times["evening"] == times["night"]:
+                    st.info("Evenings are currently disabled. Enable them by setting the times in the sidebar.")
+                if not ss["lmax_df"].empty:
+                    st.dataframe(ss["lmax_df"], key="lmax_df", width="stretch")
+                else:
+                    st.info("Run lmax_spectra() to see results here.")
+            except Exception as e:
+                st.error(f"Failed to compute lmax_spectra: {e}")
+
+    st.divider()
+
+
+    # Compute and display resi_summary directly from current logs
+    st.subheader("Modal values")
+    st.text("Note: Ignore the 'Date' label.")
+    modal_container = st.container()
+
+    with modal_container:
+        col_cols, col_day_t, col_eve_t, col_night_t = st.columns([1, 1, 1, 1])
+        with col_cols:
+            par = st.selectbox(
+                label="Which parameter to use for modal?",
+                options=["L90", "Leq", "Lmax"],
+                index=0
+            )
+            par_tup = (par, "A")
+        # TODO:
+        # with col_by_date:
+        #     by_date = st.selectbox(
+        #         label="Overall modal, or by date?",
+        #         options=["Overall", "By date"],
+        #         index=0
+        #     )
+        #     if by_date == "By date":
+        #         by_date = True
+        #     else:
+        #         by_date = False
+        with col_day_t:
+            day_t = st.selectbox(
+                label="Desired time-resolution of Daytime modal.",
+                options=[1, 2, 5, 10, 15, 30, 60, 120],
+                index=6
+            )
+            day_t = str(day_t) + "min"
+        with col_eve_t:
+            eve_t = st.selectbox(
+                label="Desired time-resolution of Evening modal.",
+                options=[1, 2, 5, 10, 15, 30, 60, 120],
+                index=6
+            )
+            eve_t = str(eve_t) + "min"
+        with col_night_t:
+            night_t = st.selectbox(
+                label="Desired time-resolution of Night modal.",
+                options=[1, 2, 5, 10, 15, 30, 60, 120],
+                index=4
+            )
+            night_t = str(night_t) + "min"
+        if not bool(ss["logs"]):
+            st.info("No logs loaded yet.")
+        else:
+            try:
+                df = survey.modal(
+                    cols=par_tup,
+                    by_date=False,
+                    day_t=day_t,
+                    evening_t=eve_t,
+                    night_t=night_t
+                )  # Always a DataFrame per your note
+                ss["modal_df"] = df
+                st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                # Show cached result on rerun
+                if not ss["modal_df"].empty:
+                    st.dataframe(ss["modal_df"], key="modal_df", width="stretch")
+                else:
+                    st.info("Run modal() to see results here.")
+            except Exception as e:
+                st.error(f"Failed to compute modal: {e}")
