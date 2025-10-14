@@ -177,18 +177,36 @@ lmax_container = st.container()
 lmax_button_container = st.container()
 
 with lmax_container:
-    nth = st.number_input(
-        label="nth-highest Lmax",
-        min_value=1,
-        max_value=60,
-        value=10,
-        step=1,
-    )
+    col_nth, col_t, col_per = st.columns([1, 1, 1])
+    with col_nth:
+        nth = st.number_input(
+            label="nth-highest Lmax",
+            min_value=1,
+            max_value=60,
+            value=10,
+            step=1,
+        )
+    with col_t:
+        t_int = st.number_input(
+            label="Desired time-resolution of Lmax",
+            min_value=1,
+            max_value=60,
+            value=10,
+            step=1,
+        )
+        t_str = str(t_int) + "min"
+    with col_per:
+        per = st.selectbox(
+            label="Which period to use for Lmax?",
+            options=["Days", "Evenings", "Nights"],
+            index=1
+        )
+        per = per.lower()
     if not bool(ss["logs"]):
         st.info("No logs loaded yet.")
     else:
         try:
-            df = survey.lmax_spectra(n=nth)  # Always a DataFrame per your note
+            df = survey.lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
             ss["lmax_df"] = df
             st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
