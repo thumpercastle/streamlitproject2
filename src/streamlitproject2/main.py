@@ -228,7 +228,7 @@ st.text("Note: Ignore the 'Date' column.")
 modal_container = st.container()
 
 with modal_container:
-    col_cols, col_by_date, col_day_t, col_eve_t, col_night_t = st.columns([1, 1, 1, 1, 1])
+    col_cols, col_by_date, col_day_t, col_eve_t, col_night_t = st.columns([1, 1, 1, 1])
     with col_cols:
         par = st.selectbox(
             label="Which parameter to use for modal?",
