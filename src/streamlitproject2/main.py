@@ -147,6 +147,8 @@ st.divider()
 
 # Compute and display resi_summary directly from current logs
 st.subheader("Leq Spectra")
+st.text(
+    "This function computes the combined Leq for the period in question over the entire survey (e.g. all days combined).")
 leq_container = st.container()
 leq_button_container = st.container()
 
@@ -173,6 +175,7 @@ st.divider()
 # Compute and display resi_summary directly from current logs
 st.subheader("Lmax Spectra")
 st.text("Note: the timestamp in the 'Date' column shows the date when the night-time period started, not the date on which the lmax occurred. e.g. 2025-08-14 00:14 lmax would have occured in the early hours of 2025-08-15.")
+st.text("This function works by selecting the highest A-weighted value, and the corresponding octave band data.")
 lmax_container = st.container()
 lmax_button_container = st.container()
 
@@ -188,10 +191,10 @@ with lmax_container:
         )
     with col_t:
         t_int = st.number_input(
-            label="Desired time-resolution of Lmax",
+            label="Desired time-resolution of Lmax (min). Must be equal to or higher than resolution of raw data.",
             min_value=1,
             max_value=60,
-            value=10,
+            value=2,
             step=1,
         )
         t_str = str(t_int) + "min"
@@ -199,7 +202,7 @@ with lmax_container:
         per = st.selectbox(
             label="Which period to use for Lmax?",
             options=["Days", "Evenings", "Nights"],
-            index=0
+            index=2
         )
         per = per.lower()
     if not bool(ss["logs"]):
