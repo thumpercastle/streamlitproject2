@@ -199,17 +199,20 @@ with lmax_container:
         per = st.selectbox(
             label="Which period to use for Lmax?",
             options=["Days", "Evenings", "Nights"],
-            index=1
+            index=0
         )
         per = per.lower()
     if not bool(ss["logs"]):
         st.info("No logs loaded yet.")
     else:
         try:
-            df = survey.lmax_spectra(n=nth, t=t_str)  # Always a DataFrame per your note
+            df = survey.lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
             ss["lmax_df"] = df
             st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
+            # Notify user if evening period disabled
+            if per == "evenings" and times["evening"] == times["night"]:
+                st.info("Evenings are currently disabled. Enable them by setting the times in the sidebar.")
             if not ss["lmax_df"].empty:
                 st.dataframe(ss["lmax_df"], key="lmax_df", width="stretch")
             else:
