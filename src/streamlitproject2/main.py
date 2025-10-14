@@ -27,6 +27,21 @@ times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
 
 col_add, col_reset = st.columns([1, 1])
 
+@st.cache_data
+def get_data():
+    df = pd.DataFrame(
+        columns=["Time", "Leq A", "Lmax A", "L90 A",
+                 "Leq 63", "Leq 125", "Leq 250", "Leq 500", "Leq 1000", "Leq 2000", "Leq 4000", "Leq 8000",
+                 "Lmax 63", "Lmax 125", "Lmax 250", "Lmax 500", "Lmax 1000", "Lmax 2000", "Lmax 4000", "Lmax 8000",
+                 "L90 63", "L90 125", "L90 250", "L90 500", "L90 1000", "L90 2000", "L90 4000", "L90 8000"]
+    )
+    return df
+
+@st.cache_data
+def convert_for_download(df):
+    return df.to_csv().encode("utf-8")
+
+
 def _cleanup_tmp_files(paths):
     for p in paths:
         try:
@@ -136,6 +151,16 @@ survey.set_periods(times=times)
 # Sidebar menu
 with st.sidebar:
     st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
+    st.markdown("# Download Template CSV")
+    df = get_data()
+    csv = convert_for_download(df)
+    st.download_button(
+        label="Download CSV",
+        data=csv,
+        file_name="data.csv",
+        mime="text/csv",
+        icon=":material/download:",
+    )
     st.markdown("# Survey Config")
     st.markdown("## Set Time Periods")
     day_start = st.time_input("Set Day Period Start", dt.time(7, 00))
