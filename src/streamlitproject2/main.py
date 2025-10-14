@@ -252,18 +252,21 @@ with modal_container:
             options=[1, 2, 5, 10, 15, 30, 60, 120],
             index=6
         )
+        day_t = str(day_t) + "min"
     with col_eve_t:
         eve_t = st.selectbox(
             label="Desired time-resolution of Evening modal.",
             options=[1, 2, 5, 10, 15, 30, 60, 120],
             index=6
         )
+        eve_t = str(eve_t) + "min"
     with col_night_t:
         night_t = st.selectbox(
             label="Desired time-resolution of Night modal.",
             options=[1, 2, 5, 10, 15, 30, 60, 120],
             index=4
         )
+        night_t = str(night_t) + "min"
     if not bool(ss["logs"]):
         st.info("No logs loaded yet.")
     else:
