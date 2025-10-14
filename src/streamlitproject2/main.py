@@ -206,7 +206,7 @@ with lmax_container:
         st.info("No logs loaded yet.")
     else:
         try:
-            df = survey.lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
+            df = survey.lmax_spectra(n=nth, t=t_str)  # Always a DataFrame per your note
             ss["lmax_df"] = df
             st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
