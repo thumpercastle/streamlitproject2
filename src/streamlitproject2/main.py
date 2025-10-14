@@ -51,7 +51,7 @@ def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time
     }
     return t
 
-
+#TODO: Add option for user input for log names.
 with col_add:
     st.subheader("1. Upload CSV logs")
     uploaded_files = st.file_uploader(
@@ -117,6 +117,8 @@ with st.sidebar:
 
 
 st.divider()
+#TODO: Implement tabs with graphs for each log.
+
 # Compute and display resi_summary directly from current logs
 st.subheader("Residential Summary (resi_summary)")
 resi_container = st.container()
@@ -175,11 +177,18 @@ lmax_container = st.container()
 lmax_button_container = st.container()
 
 with lmax_container:
+    nth = st.number_input(
+        label="nth-highest Lmax",
+        min_value=1,
+        max_value=60,
+        value=10,
+        step=1,
+    )
     if not bool(ss["logs"]):
         st.info("No logs loaded yet.")
     else:
         try:
-            df = survey.lmax_spectra()  # Always a DataFrame per your note
+            df = survey.lmax_spectra(n=nth)  # Always a DataFrame per your note
             ss["lmax_df"] = df
             st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
             # Show cached result on rerun
