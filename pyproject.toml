@@ -9,9 +9,10 @@ readme = "README.md"
 requires-python = "<=3.13,>=3.11"
 dependencies = [
     "streamlit (>=1.50.0,<2.0.0)",
-    "pycoustic (>=0.1.14,<0.2.0)",
+    "pycoustic (==0.1.15)",
     "numpy (>=2.3.3,<3.0.0)",
-    "pandas (>=2.3.3,<3.0.0)"
+    "pandas (>=2.3.3,<3.0.0)",
+    "plotly (==6.3.1)"
 ]
 
 [tool.poetry]

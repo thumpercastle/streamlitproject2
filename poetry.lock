@@ -747,14 +747,14 @@ xmp = ["defusedxml"]
 
 [[package]]
 name = "plotly"
-version = "6.1.2"
+version = "6.3.1"
 description = "An open-source interactive data visualization library for Python"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "plotly-6.1.2-py3-none-any.whl", hash = "sha256:f1548a8ed9158d59e03d7fed548c7db5549f3130d9ae19293c8638c202648f6d"},
-    {file = "plotly-6.1.2.tar.gz", hash = "sha256:4fdaa228926ba3e3a213f4d1713287e69dcad1a7e66cf2025bd7d7026d5014b4"},
+    {file = "plotly-6.3.1-py3-none-any.whl", hash = "sha256:8b4420d1dcf2b040f5983eed433f95732ed24930e496d36eb70d211923532e64"},
+    {file = "plotly-6.3.1.tar.gz", hash = "sha256:dd896e3d940e653a7ce0470087e82c2bd903969a55e30d1b01bb389319461bb0"},
 ]
 
 [package.dependencies]
@@ -762,9 +762,12 @@ narwhals = ">=1.15.1"
 packaging = "*"
 
 [package.extras]
-dev = ["black (==25.1.0)"]
+dev = ["plotly[dev-optional]"]
+dev-build = ["build", "jupyter", "plotly[dev-core]"]
+dev-core = ["pytest", "requests", "ruff (==0.11.12)"]
+dev-optional = ["anywidget", "colorcet", "fiona (<=1.9.6) ; python_version <= \"3.8\"", "geopandas", "inflect", "numpy", "orjson", "pandas", "pdfrw", "pillow", "plotly-geo", "plotly[dev-build]", "plotly[kaleido]", "polars[timezone]", "pyarrow", "pyshp", "pytz", "scikit-image", "scipy", "shapely", "statsmodels", "vaex ; python_version <= \"3.9\"", "xarray"]
 express = ["numpy"]
-kaleido = ["kaleido (==1.0.0rc13)"]
+kaleido = ["kaleido (>=1.0.0)"]
 
 [[package]]
 name = "protobuf"
@@ -843,21 +846,21 @@ test = ["cffi", "hypothesis", "pandas", "pytest", "pytz"]
 
 [[package]]
 name = "pycoustic"
-version = "0.1.14"
+version = "0.1.15"
 description = ""
 optional = false
-python-versions = "<=3.13,>=3.10"
+python-versions = "<=3.13,>=3.11"
 groups = ["main"]
 files = [
-    {file = "pycoustic-0.1.14-py3-none-any.whl", hash = "sha256:fae3576d86278ecda0058fa2357b9452bd701c1bb32eda616c1ad3263caf550b"},
-    {file = "pycoustic-0.1.14.tar.gz", hash = "sha256:5510add5c5052f742b2dba48ba8ad938e23c13ed2df50c26659bac4020d8f408"},
+    {file = "pycoustic-0.1.15-py3-none-any.whl", hash = "sha256:ac1d174bd02cd1b6f9bad67da46015ff87b06d1eb432ce3f49306f2f147f5367"},
+    {file = "pycoustic-0.1.15.tar.gz", hash = "sha256:5a9ecc5bb760bbb24d5c73544de447bc76a64e01d27253ce6ebd73269d205f45"},
 ]
 
 [package.dependencies]
 numpy = "2.3.3"
 openpyxl = "3.1.5"
 pandas = "2.3.3"
-plotly = "6.1.2"
+plotly = ">=6.3.1,<7.0.0"
 requests = ">=2.32.4,<3.0.0"
 streamlit = ">=1.46.1,<2.0.0"
 
@@ -1315,4 +1318,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<=3.13,>=3.11"
-content-hash = "b9425673a558e50f04cacebb4ceb98261e46d8aa5a4a3e56c5ebbc365c063fcc"
+content-hash = "754672a885f5f7ee3b55a165c22d3d6db8c3b5e6e3e383eb3c9c6268333786cb"
