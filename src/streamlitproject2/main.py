@@ -169,6 +169,8 @@ with st.sidebar:
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
     times = parse_times(day_start, evening_start, night_start)
     survey.set_periods(times=times)
+    st.text(" ")
+    st.text("Known error: If you add data to your csv, and then delete some cells before uploading, the app may not like it. Fix: Once you have deleted the cells you need to, create a copy of your tab in Excel, and then delete the old tab. This makes a fresh CSV that the app can handle.")
 
 
 st.divider()
