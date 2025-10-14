@@ -39,7 +39,7 @@ def get_data():
 
 @st.cache_data
 def convert_for_download(df):
-    return df.to_csv().encode("utf-8")
+    return df.to_csv(index=False).encode("utf-8")
 
 
 def _cleanup_tmp_files(paths):
