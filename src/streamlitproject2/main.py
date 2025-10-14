@@ -20,6 +20,7 @@ ss.setdefault("leq_df", pd.DataFrame())
 ss.setdefault("lmax_df", pd.DataFrame())
 ss.setdefault("modal_df", pd.DataFrame())
 ss.setdefault("survey", pc.Survey())
+ss.setdefault("num_logs", 0)
 
 times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
 
@@ -59,9 +60,37 @@ with col_add:
         type=["csv"],
         accept_multiple_files=True,
     )
+
+    # Let the user assign a custom name for each uploaded file
+    for i, f in enumerate(uploaded_files or []):
+        default_name = os.path.splitext(os.path.basename(f.name))[0]
+        st.text_input(
+            label=f"Name for {f.name}",
+            value=default_name,
+            key=f"log_name_{i}",
+            help="Enter a unique name for this log",
+        )
+
     if st.button("Add uploaded files as Logs", disabled=not uploaded_files):
         added = 0
-        for f in uploaded_files or []:
+        existing_names = set(ss["logs"].keys())
+
+        for i, f in enumerate(uploaded_files or []):
+            # Resolve user-provided name (fallback to default if missing)
+            default_name = os.path.splitext(os.path.basename(f.name))[0]
+            new_name = st.session_state.get(f"log_name_{i}", default_name).strip()
+            if not new_name:
+                st.error(f"Name for {f.name} cannot be empty.")
+                continue
+
+            # Ensure uniqueness among existing and new names
+            base = new_name
+            suffix = 1
+            while new_name in existing_names:
+                new_name = f"{base}-{suffix}"
+                suffix += 1
+            existing_names.add(new_name)
+
             # Persist the uploaded file to a temporary path for pycoustic to read
             tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
             tmp.write(f.getbuffer())
@@ -75,12 +104,12 @@ with col_add:
                 st.error(f"Failed to create Log from {f.name}: {e}")
                 continue
 
-            name = os.path.splitext(os.path.basename(f.name))[0]
-            ss["logs"][name] = log
+            ss["logs"][new_name] = log
             added += 1
 
         if added:
             st.success(f"Added {added} log(s).")
+            ss["num_logs"] = added
 
 with col_reset:
     st.subheader("2. Current Logs")
