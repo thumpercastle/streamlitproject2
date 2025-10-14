@@ -236,16 +236,17 @@ with modal_container:
             index=0
         )
         par_tup = (par, "A")
-    with col_by_date:
-        by_date = st.selectbox(
-            label="Overall modal, or by date?",
-            options=["Overall", "By date"],
-            index=0
-        )
-        if by_date == "By date":
-            by_date = True
-        else:
-            by_date = False
+    # TODO:
+    # with col_by_date:
+    #     by_date = st.selectbox(
+    #         label="Overall modal, or by date?",
+    #         options=["Overall", "By date"],
+    #         index=0
+    #     )
+    #     if by_date == "By date":
+    #         by_date = True
+    #     else:
+    #         by_date = False
     with col_day_t:
         day_t = st.selectbox(
             label="Desired time-resolution of Daytime modal.",
@@ -273,7 +274,7 @@ with modal_container:
         try:
             df = survey.modal(
                 cols=par_tup,
-                by_date=by_date,
+                by_date=False,
                 day_t=day_t,
                 evening_t=eve_t,
                 night_t=night_t
