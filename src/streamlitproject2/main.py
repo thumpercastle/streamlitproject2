@@ -9,9 +9,9 @@ import plotly.graph_objects as go
 
 # Graph colour palette config
 COLOURS = {
-    "Leq A": "#9e9e9e",   # light grey
+    "Leq A": "#FBAE18",   # light grey
     "L90 A": "#4d4d4d",   # dark grey
-    "Lmax A": "#fc2c2c",  # red
+    "Lmax A": "#B51724",  # red
 }
 # Graph template config
 TEMPLATE = "plotly"
@@ -386,7 +386,7 @@ for idx, (name, log) in enumerate(log_items, start=1):
                     y=graph_df[("Leq", "A")],
                     name="Leq A",
                     mode="lines",
-                    line=dict(color=COLOURS["Leq A"], width=1),
+                    line=dict(color=COLOURS["Leq A"], width=2),
                 )
             )
             fig.add_trace(
@@ -395,7 +395,7 @@ for idx, (name, log) in enumerate(log_items, start=1):
                     y=graph_df[("L90", "A")],
                     name="L90 A",
                     mode="lines",
-                    line=dict(color=COLOURS["L90 A"], width=1),
+                    line=dict(color=COLOURS["L90 A"], width=2),
                 )
             )
             fig.add_trace(
