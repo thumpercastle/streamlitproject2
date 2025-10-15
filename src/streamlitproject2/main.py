@@ -371,7 +371,8 @@ for idx, (name, log) in enumerate(log_items, start=1):
         period = st.selectbox(
             label="Resample period (minutes). Must be >= survey measurement period.",
             options=[1, 2, 5, 10, 15, 30, 60, 120],
-            index=4
+            index=4,
+            key=f"period_{name}"
         )
         period = str(period) + "min"
         graph_df = log.as_interval(t=period)
