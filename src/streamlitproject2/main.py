@@ -376,7 +376,7 @@ for idx, (name, log) in enumerate(log_items, start=1):
         period = str(period) + "min"
         graph_df = log.as_interval(t=period)
         st.markdown(f"## {log} raw data")
-        st.dataframe(graph_df._master, key="master", width="stretch")
+        st.dataframe(graph_df, key="master", width="stretch")
         # graph_df = (graph_log._master[[("Leq", "A"), ("Lmax", "A"), ("L90", "A")]], key="graph_df", width="stretch")
 
         # TODO: Add option for user to choose which columns are required
