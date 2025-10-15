@@ -403,7 +403,7 @@ for idx, (name, log) in enumerate(log_items, start=1):
             )
             fig.add_trace(
                 go.Scatter(
-                    x=graph_df["Timestamp"],
+                    x=graph_df.index,
                     y=graph_df[("Lmax", "A")],
                     name="Lmax A",
                     mode="markers",
