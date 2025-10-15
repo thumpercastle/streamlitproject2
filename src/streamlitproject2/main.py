@@ -362,10 +362,10 @@ with tabs[0]:
 for idx, (name, log) in enumerate(log_items, start=1):
     with tabs[idx]:
         st.caption(f"Log: {name}")
-        # st.dataframe(log._master[("Leq", "A"), ("Lmax", "A"), ("L90", "A")], key="some", width="stretch")
+
         st.markdown("## Raw data")
         st.dataframe(log._master, key="master", width="stretch")
-
+        st.dataframe(log._master["Leq"], key="some", width="stretch")
         # TODO: Time history of plots for each log.
         # log = logs.get(uf.name)
         # if log is None:
