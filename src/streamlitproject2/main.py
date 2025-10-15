@@ -375,10 +375,7 @@ for idx, (name, log) in enumerate(log_items, start=1):
         )
         period = str(period) + "min"
         graph_df = log.as_interval(t=period)
-        st.markdown(f"## {log} raw data")
-        st.dataframe(graph_df, key="master", width="stretch")
-        # graph_df = (graph_log._master[[("Leq", "A"), ("Lmax", "A"), ("L90", "A")]], key="graph_df", width="stretch")
-
+        st.markdown("Time history plot")
         # TODO: Add option for user to choose which columns are required
         required_cols = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
         if set(map(tuple, required_cols)).issubset(set(graph_df.columns.to_flat_index())):
@@ -427,93 +424,5 @@ for idx, (name, log) in enumerate(log_items, start=1):
         else:
             st.warning(f"Required columns {required_cols} missing in {name}.")
 
-
-        # TODO: Time history of plots for each log.
-        # log = logs.get(uf.name)
-        # if log is None:
-        #     st.error(f"Log for `{uf.name}` not found.")
-        #     continue
-        #
-        # # Decide whether to show raw or aggregated data
-        # if st.session_state["apply_agg"]:
-        #     # 1) Re-aggregate / resample using the chosen period
-        #     try:
-        #         df_used = log.as_interval(t=period)
-        #         df_used = df_used.reset_index().rename(
-        #             columns={df_used.index.name or "index": "Timestamp"}
-        #         )
-        #         subheader = "Integrated Survey Data"
-        #     except Exception as e:
-        #         st.error(f"Failed to apply integration period for `{uf.name}`: {e}")
-        #         continue
-        # else:
-        #     # 2) Show the raw data (from log._master) if available
-        #     try:
-        #         raw_master = log._master  # original DataFrame, indexed by Timestamp
-        #         df_used = raw_master.reset_index().rename(columns={"Time": "Timestamp"})
-        #         subheader = "Raw Survey Data"
-        #     except Exception as e:
-        #         st.error(f"Failed to load raw data for `{uf.name}`: {e}")
-        #         continue
-        #
-        # # Prepare a flattened‐column header copy JUST FOR PLOTTING
-        # df_plot = df_used.copy()
-        # if isinstance(df_plot.columns, pd.MultiIndex):
-        #     flattened_cols = []
-        #     for lvl0, lvl1 in df_plot.columns:
-        #         lvl0_str = str(lvl0)
-        #         lvl1_str = str(lvl1) if lvl1 is not None else ""
-        #         flattened_cols.append(f"{lvl0_str} {lvl1_str}".strip())
-        #     df_plot.columns = flattened_cols
-        #
-        # #  Time‐history Graph (Leq A, L90 A, Lmax A) using df_plot
-        # required_cols = {"Leq A", "L90 A", "Lmax A"}
-        # if required_cols.issubset(set(df_plot.columns)):
-        #     fig = go.Figure()
-        #     fig.add_trace(
-        #         go.Scatter(
-        #             x=df_plot["Timestamp"],
-        #             y=df_plot["Leq A"],
-        #             name="Leq A",
-        #             mode="lines",
-        #             line=dict(color=COLOURS["Leq A"], width=1),
-        #         )
-        #     )
-        #     fig.add_trace(
-        #         go.Scatter(
-        #             x=df_plot["Timestamp"],
-        #             y=df_plot["L90 A"],
-        #             name="L90 A",
-        #             mode="lines",
-        #             line=dict(color=COLOURS["L90 A"], width=1),
-        #         )
-        #     )
-        #     fig.add_trace(
-        #         go.Scatter(
-        #             x=df_plot["Timestamp"],
-        #             y=df_plot["Lmax A"],
-        #             name="Lmax A",
-        #             mode="markers",
-        #             marker=dict(color=COLOURS["Lmax A"], size=3),
-        #         )
-        #     )
-        #     fig.update_layout(
-        #         template=TEMPLATE,
-        #         margin=dict(l=0, r=0, t=0, b=0),
-        #         xaxis=dict(
-        #             title="Time & Date (hh:mm & dd/mm/yyyy)",
-        #             type="date",
-        #             tickformat="%H:%M<br>%d/%m/%Y",
-        #             tickangle=0,
-        #         ),
-        #         yaxis_title="Measured Sound Pressure Level dB(A)",
-        #         legend=dict(orientation="h", yanchor="top", y=-0.25, xanchor="left", x=0),
-        #         height=600,
-        #     )
-        #     st.plotly_chart(fig, use_container_width=True)
-        # else:
-        #     st.warning(f"Required columns {required_cols} missing in {subheader}.")
-        #
-        # # --- Finally, display the TABLE with MultiIndex intact ---
-        # st.subheader(subheader)
-        # st.dataframe(df_used, hide_index=True)
+        st.markdown(f"## {name} raw data")
+        st.dataframe(graph_df, key="master", width="stretch")
