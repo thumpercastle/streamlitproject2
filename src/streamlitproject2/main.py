@@ -374,19 +374,19 @@ for idx, (name, log) in enumerate(log_items, start=1):
             index=4
         )
         period = str(period) + "min"
-        graph_log = log.as_interval(t=period)
+        graph_df = log.as_interval(t=period)
         st.markdown(f"## {log} raw data")
-        st.dataframe(graph_log._master, key="master", width="stretch")
+        st.dataframe(graph_df._master, key="master", width="stretch")
         # graph_df = (graph_log._master[[("Leq", "A"), ("Lmax", "A"), ("L90", "A")]], key="graph_df", width="stretch")
 
         # TODO: Add option for user to choose which columns are required
         required_cols = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
-        if set(map(tuple, required_cols)).issubset(set(graph_log.columns.to_flat_index())):
+        if set(map(tuple, required_cols)).issubset(set(graph_df.columns.to_flat_index())):
             fig = go.Figure()
             fig.add_trace(
                 go.Scatter(
-                    x=graph_log.index,
-                    y=graph_log[("Leq", "A")],
+                    x=graph_df.index,
+                    y=graph_df[("Leq", "A")],
                     name="Leq A",
                     mode="lines",
                     line=dict(color=COLOURS["Leq A"], width=1),
@@ -394,8 +394,8 @@ for idx, (name, log) in enumerate(log_items, start=1):
             )
             fig.add_trace(
                 go.Scatter(
-                    x=graph_log.index,
-                    y=graph_log[("L90", "A")],
+                    x=graph_df.index,
+                    y=graph_df[("L90", "A")],
                     name="L90 A",
                     mode="lines",
                     line=dict(color=COLOURS["L90 A"], width=1),
@@ -403,8 +403,8 @@ for idx, (name, log) in enumerate(log_items, start=1):
             )
             fig.add_trace(
                 go.Scatter(
-                    x=df_plot["Timestamp"],
-                    y=df_plot[("Lmax", "A")],
+                    x=graph_df["Timestamp"],
+                    y=graph_df[("Lmax", "A")],
                     name="Lmax A",
                     mode="markers",
                     marker=dict(color=COLOURS["Lmax A"], size=3),
