@@ -375,7 +375,7 @@ for idx, (name, log) in enumerate(log_items, start=1):
         )
         period = str(period) + "min"
         graph_df = log.as_interval(t=period)
-        st.markdown("Time history plot")
+        st.markdown(f"## {name} time history plot")
         # TODO: Add option for user to choose which columns are required
         required_cols = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
         if set(map(tuple, required_cols)).issubset(set(graph_df.columns.to_flat_index())):
@@ -424,5 +424,5 @@ for idx, (name, log) in enumerate(log_items, start=1):
         else:
             st.warning(f"Required columns {required_cols} missing in {name}.")
 
-        st.markdown(f"## {name} raw data")
+        st.markdown(f"## {name} resampled data")
         st.dataframe(graph_df, key="master", width="stretch")
