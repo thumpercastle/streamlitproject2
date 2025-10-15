@@ -365,7 +365,7 @@ for idx, (name, log) in enumerate(log_items, start=1):
 
         st.markdown("## Raw data")
         st.dataframe(log._master, key="master", width="stretch")
-        st.dataframe(log._master["Leq"], key="some", width="stretch")
+        st.dataframe(log._master[("Leq", "A")], key="some", width="stretch")
         # TODO: Time history of plots for each log.
         # log = logs.get(uf.name)
         # if log is None:
