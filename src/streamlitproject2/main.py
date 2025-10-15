@@ -7,7 +7,14 @@ import pandas as pd
 from typing import Dict, Tuple
 import plotly.graph_objects as go
 
-
+# Graph colour palette config
+COLOURS = {
+    "Leq A": "#9e9e9e",   # light grey
+    "L90 A": "#4d4d4d",   # dark grey
+    "Lmax A": "#fc2c2c",  # red
+}
+# Graph template config
+TEMPLATE = "plotly"
 
 st.set_page_config(page_title="pycoustic GUI", layout="wide")
 st.title("pycoustic Streamlit GUI")
@@ -366,10 +373,60 @@ for idx, (name, log) in enumerate(log_items, start=1):
             options=[1, 2, 5, 10, 15, 30, 60, 120],
             index=4
         )
-        graph_log = log.resample(t=period)
+        period = str(period) + "min"
+        graph_log = log.as_interval(t=period)
         st.markdown(f"## {log} raw data")
         st.dataframe(graph_log._master, key="master", width="stretch")
         # graph_df = (graph_log._master[[("Leq", "A"), ("Lmax", "A"), ("L90", "A")]], key="graph_df", width="stretch")
+
+        # TODO: Add option for user to choose which columns are required
+        required_cols = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
+        if set(map(tuple, required_cols)).issubset(set(graph_log.columns.to_flat_index())):
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=graph_log.index,
+                    y=graph_log[("Leq", "A")],
+                    name="Leq A",
+                    mode="lines",
+                    line=dict(color=COLOURS["Leq A"], width=1),
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=graph_log.index,
+                    y=graph_log[("L90", "A")],
+                    name="L90 A",
+                    mode="lines",
+                    line=dict(color=COLOURS["L90 A"], width=1),
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=df_plot["Timestamp"],
+                    y=df_plot[("Lmax", "A")],
+                    name="Lmax A",
+                    mode="markers",
+                    marker=dict(color=COLOURS["Lmax A"], size=3),
+                )
+            )
+            fig.update_layout(
+                template=TEMPLATE,
+                margin=dict(l=0, r=0, t=0, b=0),
+                xaxis=dict(
+                    title="Time & Date (hh:mm & dd/mm/yyyy)",
+                    type="date",
+                    tickformat="%H:%M<br>%d/%m/%Y",
+                    tickangle=0,
+                ),
+                yaxis_title="Measured Sound Pressure Level dB(A)",
+                legend=dict(orientation="h", yanchor="top", y=-0.25, xanchor="left", x=0),
+                height=600,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning(f"Required columns {required_cols} missing in {name}.")
+
 
         # TODO: Time history of plots for each log.
         # log = logs.get(uf.name)
