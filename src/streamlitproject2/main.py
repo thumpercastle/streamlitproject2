@@ -361,11 +361,16 @@ with tabs[0]:
 # One tab per log - assumes the same layout in each
 for idx, (name, log) in enumerate(log_items, start=1):
     with tabs[idx]:
-        st.caption(f"Log: {name}")
+        period = st.selectbox(
+            label="Resample period (minutes). Must be >= survey measurement period.",
+            options=[1, 2, 5, 10, 15, 30, 60, 120],
+            index=4
+        )
+        graph_log = log.resample(t=period)
+        st.markdown(f"## {log} raw data")
+        st.dataframe(graph_log._master, key="master", width="stretch")
+        graph_df = (graph_log._master[[("Leq", "A"), ("Lmax", "A"), ("L90", "A")]], key="graph_df", width="stretch")
 
-        st.markdown("## Raw data")
-        st.dataframe(log._master, key="master", width="stretch")
-        st.dataframe(log._master[("Leq", "A"), ("Lmax", "A")], key="some", width="stretch")
         # TODO: Time history of plots for each log.
         # log = logs.get(uf.name)
         # if log is None:
