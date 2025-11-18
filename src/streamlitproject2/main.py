@@ -32,7 +32,7 @@ ss.setdefault("num_logs", 0)
 
 times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
 
-col_add, col_reset = st.columns([1, 1])
+
 
 @st.cache_data
 def get_data():
@@ -76,8 +76,9 @@ def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time
     return t
 
 #TODO: Add option for user input for log names.
-with col_add:
-    with st.popover("Data Loader"):
+with st.expander("Data Loader"):
+    col_add, col_reset = st.columns([1, 1])
+    with col_add:
         st.subheader("1. Upload CSV logs")
         uploaded_files = st.file_uploader(
             "Choose one or more CSV files",
@@ -135,19 +136,19 @@ with col_add:
                 st.success(f"Added {added} log(s).")
                 ss["num_logs"] = added
 
-with col_reset:
-    st.subheader("2. Current Logs")
-    if ss["logs"]:
-        st.write(f"{len(ss['logs'])} log(s) loaded:")
-        st.write(list(ss["logs"].keys()))
-    else:
-        st.info("No logs loaded yet.")
-    if st.button("Reset"):
-        _cleanup_tmp_files(ss.get("tmp_paths", []))
-        ss["tmp_paths"] = []
-        ss["logs"] = {}
-        ss["resi_df"] = pd.DataFrame()
-        st.rerun()
+    with col_reset:
+        st.subheader("2. Current Logs")
+        if ss["logs"]:
+            st.write(f"{len(ss['logs'])} log(s) loaded:")
+            st.write(list(ss["logs"].keys()))
+        else:
+            st.info("No logs loaded yet.")
+        if st.button("Reset"):
+            _cleanup_tmp_files(ss.get("tmp_paths", []))
+            ss["tmp_paths"] = []
+            ss["logs"] = {}
+            ss["resi_df"] = pd.DataFrame()
+            st.rerun()
 
 # Build the survey
 survey = pc.Survey()
