@@ -77,7 +77,7 @@ def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time
 
 #TODO: Add option for user input for log names.
 with col_add:
-    with st.popover("Data Loader")
+    with st.popover("Data Loader"):
         st.subheader("1. Upload CSV logs")
         uploaded_files = st.file_uploader(
             "Choose one or more CSV files",
