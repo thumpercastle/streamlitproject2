@@ -430,5 +430,6 @@ for idx, (name, log) in enumerate(log_items, start=1):
 
         st.markdown(f"## {name} resampled data")
         st.dataframe(graph_df, key="master", width="stretch")
-        bar_df = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]])
-        st.bar_chart(bar_df, y=["Daytime", "Night-time"], use_container_width=True)
+        row = survey.counts().loc[name, ["Daytime", "Night-time"]]  # Series
+        bar_df = row.to_frame().T  # 1-row DataFrame with those two columns
+        st.bar_chart(bar_df, use_container_width=True)
