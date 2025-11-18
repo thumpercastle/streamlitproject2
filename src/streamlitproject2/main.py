@@ -367,6 +367,9 @@ with tabs[0]:
                 except Exception as e:
                     st.error(f"Failed to compute modal: {e}")
 
+            counts_df: survey.counts()
+            st.bar_chart(counts_df, use_container_width=True)
+
 # One tab per log - assumes the same layout in each
 for idx, (name, log) in enumerate(log_items, start=1):
     with tabs[idx]:
