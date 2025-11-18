@@ -431,5 +431,4 @@ for idx, (name, log) in enumerate(log_items, start=1):
         st.markdown(f"## {name} resampled data")
         st.dataframe(graph_df, key="master", width="stretch")
 
-        counts_df: survey.counts().loc(name)
-        st.bar_chart(counts_df, use_container_width=True)
+        st.bar_chart(survey.counts.loc[name], y=["Daytime", "Night-time"] use_container_width=True)
