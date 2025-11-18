@@ -77,62 +77,63 @@ def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time
 
 #TODO: Add option for user input for log names.
 with col_add:
-    st.subheader("1. Upload CSV logs")
-    uploaded_files = st.file_uploader(
-        "Choose one or more CSV files",
-        type=["csv"],
-        accept_multiple_files=True,
-    )
-
-    # Let the user assign a custom name for each uploaded file
-    for i, f in enumerate(uploaded_files or []):
-        default_name = os.path.splitext(os.path.basename(f.name))[0]
-        st.text_input(
-            label=f"Name for {f.name}",
-            value=default_name,
-            key=f"log_name_{i}",
-            help="Enter a unique name for this log",
+    with st.popover("Data Loader")
+        st.subheader("1. Upload CSV logs")
+        uploaded_files = st.file_uploader(
+            "Choose one or more CSV files",
+            type=["csv"],
+            accept_multiple_files=True,
         )
 
-    if st.button("Add uploaded files as Logs", disabled=not uploaded_files):
-        added = 0
-        existing_names = set(ss["logs"].keys())
-
+        # Let the user assign a custom name for each uploaded file
         for i, f in enumerate(uploaded_files or []):
-            # Resolve user-provided name (fallback to default if missing)
             default_name = os.path.splitext(os.path.basename(f.name))[0]
-            new_name = st.session_state.get(f"log_name_{i}", default_name).strip()
-            if not new_name:
-                st.error(f"Name for {f.name} cannot be empty.")
-                continue
+            st.text_input(
+                label=f"Name for {f.name}",
+                value=default_name,
+                key=f"log_name_{i}",
+                help="Enter a unique name for this log",
+            )
 
-            # Ensure uniqueness among existing and new names
-            base = new_name
-            suffix = 1
-            while new_name in existing_names:
-                new_name = f"{base}-{suffix}"
-                suffix += 1
-            existing_names.add(new_name)
+        if st.button("Add uploaded files as Logs", disabled=not uploaded_files):
+            added = 0
+            existing_names = set(ss["logs"].keys())
 
-            # Persist the uploaded file to a temporary path for pycoustic to read
-            tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
-            tmp.write(f.getbuffer())
-            tmp.flush()
-            tmp.close()
-            ss["tmp_paths"].append(tmp.name)
+            for i, f in enumerate(uploaded_files or []):
+                # Resolve user-provided name (fallback to default if missing)
+                default_name = os.path.splitext(os.path.basename(f.name))[0]
+                new_name = st.session_state.get(f"log_name_{i}", default_name).strip()
+                if not new_name:
+                    st.error(f"Name for {f.name} cannot be empty.")
+                    continue
 
-            try:
-                log = pc.Log(tmp.name)
-            except Exception as e:
-                st.error(f"Failed to create Log from {f.name}: {e}")
-                continue
+                # Ensure uniqueness among existing and new names
+                base = new_name
+                suffix = 1
+                while new_name in existing_names:
+                    new_name = f"{base}-{suffix}"
+                    suffix += 1
+                existing_names.add(new_name)
 
-            ss["logs"][new_name] = log
-            added += 1
+                # Persist the uploaded file to a temporary path for pycoustic to read
+                tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
+                tmp.write(f.getbuffer())
+                tmp.flush()
+                tmp.close()
+                ss["tmp_paths"].append(tmp.name)
 
-        if added:
-            st.success(f"Added {added} log(s).")
-            ss["num_logs"] = added
+                try:
+                    log = pc.Log(tmp.name)
+                except Exception as e:
+                    st.error(f"Failed to create Log from {f.name}: {e}")
+                    continue
+
+                ss["logs"][new_name] = log
+                added += 1
+
+            if added:
+                st.success(f"Added {added} log(s).")
+                ss["num_logs"] = added
 
 with col_reset:
     st.subheader("2. Current Logs")
