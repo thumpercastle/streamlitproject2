@@ -41,7 +41,6 @@ ss.setdefault("num_logs", 0)
 times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
 
 
-
 @st.cache_data
 def get_data():
     df = pd.DataFrame(
@@ -179,41 +178,11 @@ with st.sidebar:
         icon=":material/download:",
     )
     st.markdown("# Survey Config")
-
-    ### Set time periods ###
     st.markdown("## Set Time Periods")
-    day_start = st.time_input("Set Day Period Start", dt.time(7, 00))
-    evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00))
-    night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
+    day_start = st.time_input("Set Day Period Start", dt.time(7, 00), on_change=st.rerun)
+    evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00), on_change=st.rerun)
+    night_start = st.time_input("Set Night Period Start", dt.time(23, 00), on_change=st.rerun)
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
-
-    # --- NEW: auto-apply period changes when any time input changes ---
-    prev_day = ss.get("prev_day_start")
-    prev_evening = ss.get("prev_evening_start")
-    prev_night = ss.get("prev_night_start")
-
-    # First run: initialise previous values
-    if prev_day is None or prev_evening is None or prev_night is None:
-        ss["prev_day_start"] = day_start
-        ss["prev_evening_start"] = evening_start
-        ss["prev_night_start"] = night_start
-
-    # Detect change in any of the three times
-    if (
-        prev_day is not None
-        and (day_start != prev_day
-             or evening_start != prev_evening
-             or night_start != prev_night)
-    ):
-        times = parse_times(day_start, evening_start, night_start)
-        survey.set_periods(times=times)
-        ss["prev_day_start"] = day_start
-        ss["prev_evening_start"] = evening_start
-        ss["prev_night_start"] = night_start
-        st.rerun()
-    # --- END NEW ---
-
-    # Keep existing behaviour so `times` is always set
     times = parse_times(day_start, evening_start, night_start)
     survey.set_periods(times=times)
     st.text(" ")
