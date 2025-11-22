@@ -36,61 +36,130 @@ with st.popover("Data Loader", width="stretch"):
     col_add, col_reset = st.columns([1, 1])
     with col_add:
         st.subheader("1. Upload CSV logs")
+
+        # Stage files into a "pending uploads" queue with custom names and removal support
         uploaded_files = st.file_uploader(
             "Choose one or more CSV files",
             type=["csv"],
             accept_multiple_files=True,
+            help="You can add multiple CSV files at once.",
+            key="inline_log_uploader",
         )
 
-        # Let the user assign a custom name for each uploaded file
-        for i, f in enumerate(uploaded_files or []):
-            default_name = os.path.splitext(os.path.basename(f.name))[0]
-            st.text_input(
-                label=f"Name for {f.name}",
-                value=default_name,
-                key=f"log_name_{i}",
-                help="Enter a unique name for this log",
+        # Initialise or retrieve current queue
+        queue = ss.get("pending_uploads", [])
+        # Track names already in queue to avoid simple duplicates by original name
+        known_original_names = {item["original_name"] for item in queue}
+
+        for uploaded in uploaded_files or []:
+            if uploaded.name in known_original_names:
+                # Skip if an item with the same original name is already staged
+                continue
+            known_original_names.add(uploaded.name)
+            file_bytes = uploaded.getvalue()
+            default_name = os.path.splitext(os.path.basename(uploaded.name))[0]
+            queue.append(
+                {
+                    "original_name": uploaded.name,
+                    "data": file_bytes,
+                    "custom_name": default_name,
+                    "size": len(file_bytes),
+                }
             )
 
-        if st.button("Add uploaded files as Logs", disabled=not uploaded_files):
-            added = 0
-            existing_names = set(ss["logs"].keys())
+        # Allow user to edit names and remove staged files
+        removal_indices = []
+        for idx, item in enumerate(queue):
+            name_col, action_col = st.columns([3, 1])
+            with name_col:
+                label = f"Name for {item['original_name']}"
+                item["custom_name"] = st.text_input(
+                    label=label,
+                    value=item.get("custom_name", ""),
+                    key=f"log_name_pending_{idx}",
+                    help="Enter a unique name for this log.",
+                ).strip()
+            with action_col:
+                if st.button("Remove", key=f"remove_pending_{idx}", use_container_width=True):
+                    removal_indices.append(idx)
 
-            for i, f in enumerate(uploaded_files or []):
-                # Resolve user-provided name (fallback to default if missing)
-                default_name = os.path.splitext(os.path.basename(f.name))[0]
-                new_name = st.session_state.get(f"log_name_{i}", default_name).strip()
-                if not new_name:
-                    st.error(f"Name for {f.name} cannot be empty.")
+        # Apply removals from queue and clean up any associated text inputs
+        if removal_indices:
+            for idx in sorted(removal_indices, reverse=True):
+                st.session_state.pop(f"log_name_pending_{idx}", None)
+                queue.pop(idx)
+
+        # Persist updated queue back to session state
+        ss["pending_uploads"] = queue
+
+        # Show a small summary table of staged files
+        if queue:
+            table_data = [
+                {
+                    "Original name": item["original_name"],
+                    "Custom name": item.get("custom_name", ""),
+                    "Size (bytes)": item["size"],
+                }
+                for item in queue
+            ]
+            st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+        else:
+            st.info("No files staged yet. Drag-and-drop CSV files above to begin.")
+
+        # Final action: add staged files as logs
+        add_clicked = st.button(
+            f"Add {len(queue)} file(s) as logs" if queue else "Add files as logs",
+            disabled=not queue,
+            use_container_width=True,
+            key="inline_add_logs",
+        )
+
+        if add_clicked and queue:
+            existing_names = set(ss["logs"].keys())
+            added = 0
+
+            # Work on a copy because we may clear queue after success
+            for item in list(queue):
+                default_name = os.path.splitext(os.path.basename(item["original_name"]))[0]
+                custom_name = item.get("custom_name") or default_name
+                if not custom_name:
+                    st.error(f"Name for {item['original_name']} cannot be empty.")
                     continue
 
-                # Ensure uniqueness among existing and new names
-                base = new_name
+                # Ensure uniqueness
+                sanitized_name = custom_name
                 suffix = 1
-                while new_name in existing_names:
-                    new_name = f"{base}-{suffix}"
+                while sanitized_name in existing_names:
+                    sanitized_name = f"{custom_name}-{suffix}"
                     suffix += 1
-                existing_names.add(new_name)
+                existing_names.add(sanitized_name)
 
                 # Persist the uploaded file to a temporary path for pycoustic to read
-                tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
-                tmp.write(f.getbuffer())
-                tmp.flush()
-                tmp.close()
-                ss["tmp_paths"].append(tmp.name)
+                tmp_file = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
+                tmp_file.write(item["data"])
+                tmp_file.flush()
+                tmp_file.close()
+                ss["tmp_paths"].append(tmp_file.name)
 
                 try:
-                    log = pc.Log(tmp.name)
-                except Exception as e:
-                    st.error(f"Failed to create Log from {f.name}: {e}")
+                    log = pc.Log(tmp_file.name)
+                except Exception as exc:
+                    st.error(f"Failed to create Log from {item['original_name']}: {exc}")
                     continue
 
-                ss["logs"][new_name] = log
+                ss["logs"][sanitized_name] = log
                 added += 1
 
             if added:
+                ss["last_upload_ts"] = dt.datetime.now()
+                ss["num_logs"] = len(ss["logs"])
+                ss["pending_uploads"] = []
+                # Clear name inputs for a clean state next time
+                for key in list(st.session_state.keys()):
+                    if key.startswith("log_name_pending_"):
+                        st.session_state.pop(key, None)
                 st.success(f"Added {added} log(s).")
-                ss["num_logs"] = added
+                st.rerun()
 
     with col_reset:
         st.subheader("2. Current Logs")
