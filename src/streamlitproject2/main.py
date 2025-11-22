@@ -459,5 +459,6 @@ for idx, (name, log) in enumerate(log_items, start=1):
         # TODO: Value counts
         # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
         # counts = survey.counts()
+        st.markdown("Counts")
         st.dataframe(ss["modal_df"], key="counts", width="stretch")
         # st.bar_chart(counts, use_container_width=True)
