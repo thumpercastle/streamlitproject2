@@ -7,6 +7,14 @@ import pandas as pd
 from typing import Dict, Tuple
 import plotly.graph_objects as go
 
+#TODO: Evening periods don't work on Streamlit
+#TODO: Move 'Lmax period' drop down into Lmax tab
+#TODO: Add modal and counts bar chart
+#TODO: Add titles to graphs
+#TODO: Tidy buttons and info on graph page.
+
+
+
 # Graph colour palette config
 COLOURS = {
     "Leq A": "#FBAE18",   # light grey
@@ -171,11 +179,41 @@ with st.sidebar:
         icon=":material/download:",
     )
     st.markdown("# Survey Config")
+
+    ### Set time periods ###
     st.markdown("## Set Time Periods")
     day_start = st.time_input("Set Day Period Start", dt.time(7, 00))
     evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00))
     night_start = st.time_input("Set Night Period Start", dt.time(23, 00))
     st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
+
+    # --- NEW: auto-apply period changes when any time input changes ---
+    prev_day = ss.get("prev_day_start")
+    prev_evening = ss.get("prev_evening_start")
+    prev_night = ss.get("prev_night_start")
+
+    # First run: initialise previous values
+    if prev_day is None or prev_evening is None or prev_night is None:
+        ss["prev_day_start"] = day_start
+        ss["prev_evening_start"] = evening_start
+        ss["prev_night_start"] = night_start
+
+    # Detect change in any of the three times
+    if (
+        prev_day is not None
+        and (day_start != prev_day
+             or evening_start != prev_evening
+             or night_start != prev_night)
+    ):
+        times = parse_times(day_start, evening_start, night_start)
+        survey.set_periods(times=times)
+        ss["prev_day_start"] = day_start
+        ss["prev_evening_start"] = evening_start
+        ss["prev_night_start"] = night_start
+        st.rerun()
+    # --- END NEW ---
+
+    # Keep existing behaviour so `times` is always set
     times = parse_times(day_start, evening_start, night_start)
     survey.set_periods(times=times)
     st.text(" ")
