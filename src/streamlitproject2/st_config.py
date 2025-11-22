@@ -27,6 +27,8 @@ def init_app_state() -> st.session_state:
     ss.setdefault("modal_df", pd.DataFrame())
     ss.setdefault("survey", pc.Survey())
     ss.setdefault("num_logs", 0)
+    ss.setdefault("pending_uploads", [])
+    ss.setdefault("last_upload_ts", None)
     return ss
 
 default_times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
