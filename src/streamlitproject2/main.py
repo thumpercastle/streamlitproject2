@@ -395,7 +395,7 @@ with tabs[0]:
             st.markdown("Counts")
             ss["counts"] = survey.counts()
             st.dataframe(ss["counts"], key="counts", width="stretch")
-            count_graph = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
+            count_graph = survey.counts()["Daytime"]
             st.dataframe(count_graph, key="count_graph", width="stretch")
 
 
