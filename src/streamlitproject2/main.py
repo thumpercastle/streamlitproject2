@@ -469,7 +469,12 @@ for idx, (name, log) in enumerate(log_items, start=1):
 
         st.markdown(f"## {name} value counts")
         fig = ss["counts"].loc[name].plot.bar()
-        st.plotly_chart(fig, y="Occurrences", color="Period", theme=None)
+        st.plotly_chart(fig, config={
+            "y": "Occurrences",
+            "x": "dB",
+            "color": "Period",
+            "theme": None
+        })
 
 
 
