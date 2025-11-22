@@ -465,13 +465,16 @@ for idx, (name, log) in enumerate(log_items, start=1):
         # TODO: Enable value counts for other parameters
         # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
         # counts = survey.counts()
-        # st.dataframe(ss["counts"].loc[name], key="counts", width="stretch")
+        st.dataframe(ss["counts"].loc[name], key="counts", width="stretch")
 
-        st.markdown(f"## {name} value counts")
+        st.markdown(f"## {name} L90 value counts")
         fig = ss["counts"].loc[name].plot.bar()
-        st.plotly_chart(fig, x="dB", y="Occurrences", color="Period", config={
+        st.plotly_chart(fig, config={
+            "y": "Occurrences",
+            "x": "dB",
+            "color": "Period",
             "theme": None
-        })
+        }) #TODO: These kwargs don't work.
 
 
 
