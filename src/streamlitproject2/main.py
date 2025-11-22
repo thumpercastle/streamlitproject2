@@ -7,6 +7,10 @@ import pandas as pd
 from typing import Dict, Tuple
 import plotly.graph_objects as go
 
+# NEW imports for modal uploader
+import hashlib
+from uuid import uuid4
+from typing import List
 
 from st_config import (
     init_app_state,
@@ -32,148 +36,247 @@ st.title("pycoustic Streamlit GUI")
 
 
 #TODO: Add option for user input for log names.
-with st.popover("Data Loader", width="stretch"):
-    col_add, col_reset = st.columns([1, 1])
-    with col_add:
-        st.subheader("1. Upload CSV logs")
+# ---------------------------------------------------------------------------
+# Modal uploader helpers
+# ---------------------------------------------------------------------------
 
-        # Stage files into a "pending uploads" queue with custom names and removal support
-        uploaded_files = st.file_uploader(
-            "Choose one or more CSV files",
-            type=["csv"],
-            accept_multiple_files=True,
-            help="You can add multiple CSV files at once.",
-            key="inline_log_uploader",
+def _update_pending_uploads(queue: List[Dict]) -> None:
+    ss["pending_uploads"] = queue
+
+
+def _format_bytes(num: int) -> str:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if num < 1024.0:
+            return f"{num:3.1f} {unit}"
+        num /= 1024.0
+    return f"{num:.1f} PB"
+
+
+_dialog_decorator = getattr(st, "experimental_dialog", None)
+
+
+def _render_upload_modal_contents() -> None:
+    uploaded_files = st.file_uploader(
+        "Select CSV files",
+        type=["csv"],
+        accept_multiple_files=True,
+        key="modal_log_uploader",
+        help="You can add multiple CSV files at once.",
+    )
+
+    queue = ss.get("pending_uploads", [])
+    known_hashes = {item["hash"] for item in queue}
+
+    for uploaded in uploaded_files or []:
+        file_bytes = uploaded.getvalue()
+        file_hash = hashlib.sha256(file_bytes).hexdigest()
+        if file_hash in known_hashes:
+            continue
+        known_hashes.add(file_hash)
+        queue.append(
+            {
+                "id": uuid4().hex,
+                "original_name": uploaded.name,
+                "hash": file_hash,
+                "data": file_bytes,
+                "custom_name": os.path.splitext(os.path.basename(uploaded.name))[0],
+                "size": len(file_bytes),
+            }
         )
 
-        # Initialise or retrieve current queue
-        queue = ss.get("pending_uploads", [])
-        # Track names already in queue to avoid simple duplicates by original name
-        known_original_names = {item["original_name"] for item in queue}
+    removal_ids: List[str] = []
+    for item in queue:
+        name_col, action_col = st.columns([3, 1])
+        with name_col:
+            label = f"Name for {item['original_name']}"
+            item["custom_name"] = st.text_input(
+                label=label,
+                value=item.get("custom_name", ""),
+                key=f"log_name_{item['id']}",
+                help="Enter a unique name for this log.",
+            ).strip()
+        with action_col:
+            if st.button("Remove", key=f"remove_{item['id']}", use_container_width=True):
+                removal_ids.append(item["id"])
 
-        for uploaded in uploaded_files or []:
-            if uploaded.name in known_original_names:
-                # Skip if an item with the same original name is already staged
-                continue
-            known_original_names.add(uploaded.name)
-            file_bytes = uploaded.getvalue()
-            default_name = os.path.splitext(os.path.basename(uploaded.name))[0]
-            queue.append(
-                {
-                    "original_name": uploaded.name,
-                    "data": file_bytes,
-                    "custom_name": default_name,
-                    "size": len(file_bytes),
-                }
-            )
+    if removal_ids:
+        queue = [item for item in queue if item["id"] not in removal_ids]
+        for removed_id in removal_ids:
+            st.session_state.pop(f"log_name_{removed_id}", None)
 
-        # Allow user to edit names and remove staged files
-        removal_indices = []
-        for idx, item in enumerate(queue):
-            name_col, action_col = st.columns([3, 1])
-            with name_col:
-                label = f"Name for {item['original_name']}"
-                item["custom_name"] = st.text_input(
-                    label=label,
-                    value=item.get("custom_name", ""),
-                    key=f"log_name_pending_{idx}",
-                    help="Enter a unique name for this log.",
-                ).strip()
-            with action_col:
-                if st.button("Remove", key=f"remove_pending_{idx}", use_container_width=True):
-                    removal_indices.append(idx)
+    _update_pending_uploads(queue)
 
-        # Apply removals from queue and clean up any associated text inputs
-        if removal_indices:
-            for idx in sorted(removal_indices, reverse=True):
-                st.session_state.pop(f"log_name_pending_{idx}", None)
-                queue.pop(idx)
+    if queue:
+        table_data = [
+            {
+                "Original name": item["original_name"],
+                "Custom name": item.get("custom_name", ""),
+                "Size": _format_bytes(item["size"]),
+            }
+            for item in queue
+        ]
+        st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+    else:
+        st.info("No files staged yet. Drag-and-drop CSV files above to begin.")
 
-        # Persist updated queue back to session state
-        ss["pending_uploads"] = queue
-
-        # Show a small summary table of staged files
-        if queue:
-            table_data = [
-                {
-                    "Original name": item["original_name"],
-                    "Custom name": item.get("custom_name", ""),
-                    "Size (bytes)": item["size"],
-                }
-                for item in queue
-            ]
-            st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
-        else:
-            st.info("No files staged yet. Drag-and-drop CSV files above to begin.")
-
-        # Final action: add staged files as logs
+    add_col, close_col = st.columns([3, 1])
+    with add_col:
         add_clicked = st.button(
             f"Add {len(queue)} file(s) as logs" if queue else "Add files as logs",
             disabled=not queue,
             use_container_width=True,
-            key="inline_add_logs",
+            key="modal_add_logs",
         )
-
-        if add_clicked and queue:
-            existing_names = set(ss["logs"].keys())
-            added = 0
-
-            # Work on a copy because we may clear queue after success
-            for item in list(queue):
-                default_name = os.path.splitext(os.path.basename(item["original_name"]))[0]
-                custom_name = item.get("custom_name") or default_name
-                if not custom_name:
-                    st.error(f"Name for {item['original_name']} cannot be empty.")
-                    continue
-
-                # Ensure uniqueness
-                sanitized_name = custom_name
-                suffix = 1
-                while sanitized_name in existing_names:
-                    sanitized_name = f"{custom_name}-{suffix}"
-                    suffix += 1
-                existing_names.add(sanitized_name)
-
-                # Persist the uploaded file to a temporary path for pycoustic to read
-                tmp_file = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
-                tmp_file.write(item["data"])
-                tmp_file.flush()
-                tmp_file.close()
-                ss["tmp_paths"].append(tmp_file.name)
-
-                try:
-                    log = pc.Log(tmp_file.name)
-                except Exception as exc:
-                    st.error(f"Failed to create Log from {item['original_name']}: {exc}")
-                    continue
-
-                ss["logs"][sanitized_name] = log
-                added += 1
-
-            if added:
-                ss["last_upload_ts"] = dt.datetime.now()
-                ss["num_logs"] = len(ss["logs"])
-                ss["pending_uploads"] = []
-                # Clear name inputs for a clean state next time
-                for key in list(st.session_state.keys()):
-                    if key.startswith("log_name_pending_"):
-                        st.session_state.pop(key, None)
-                st.success(f"Added {added} log(s).")
-                st.rerun()
-
-    with col_reset:
-        st.subheader("2. Current Logs")
-        if ss["logs"]:
-            st.write(f"{len(ss['logs'])} log(s) loaded:")
-            st.write(list(ss["logs"].keys()))
-        else:
-            st.info("No logs loaded yet.")
-        if st.button("Reset"):
-            _cleanup_tmp_files(ss.get("tmp_paths", []))
-            ss["tmp_paths"] = []
-            ss["logs"] = {}
-            ss["resi_df"] = pd.DataFrame()
+    with close_col:
+        if st.button("Close", use_container_width=True, key="modal_close_logs"):
+            ss["show_upload_modal"] = False
             st.rerun()
+
+    if add_clicked and queue:
+        existing_names = set(ss["logs"].keys())
+        succeeded_ids: List[str] = []
+        added = 0
+
+        for item in list(queue):
+            default_name = os.path.splitext(os.path.basename(item["original_name"]))[0]
+            custom_name = item.get("custom_name") or default_name
+            if not custom_name:
+                st.error(f"Name for {item['original_name']} cannot be empty.")
+                continue
+
+            sanitized_name = custom_name
+            suffix = 1
+            while sanitized_name in existing_names:
+                sanitized_name = f"{custom_name}-{suffix}"
+                suffix += 1
+            existing_names.add(sanitized_name)
+
+            tmp_file = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
+            tmp_file.write(item["data"])
+            tmp_file.flush()
+            tmp_file.close()
+            ss["tmp_paths"].append(tmp_file.name)
+
+            try:
+                log = pc.Log(tmp_file.name)
+            except Exception as exc:
+                st.error(f"Failed to create Log from {item['original_name']}: {exc}")
+                continue
+
+            ss["logs"][sanitized_name] = log
+            succeeded_ids.append(item["id"])
+            added += 1
+
+        if added:
+            ss["last_upload_ts"] = dt.datetime.now()
+            ss["num_logs"] = len(ss["logs"])
+            for upload_id in succeeded_ids:
+                st.session_state.pop(f"log_name_{upload_id}", None)
+            queue = [item for item in queue if item["id"] not in succeeded_ids]
+            _update_pending_uploads(queue)
+            st.success(f"Added {added} log(s).")
+            if not queue:
+                ss["show_upload_modal"] = False
+            st.rerun()
+
+
+if _dialog_decorator:
+    def _upload_dialog_decorator():
+        try:
+            return _dialog_decorator("Upload CSV logs", width="large")
+        except TypeError:
+            return _dialog_decorator("Upload CSV logs")
+
+    @_upload_dialog_decorator()
+    def show_upload_modal() -> None:
+        _render_upload_modal_contents()
+else:
+    def show_upload_modal() -> None:
+        st.info("This Streamlit version does not support modal dialogs; showing the uploader inline instead.")
+        with st.container():
+            _render_upload_modal_contents()
+
+
+# ---------------------------------------------------------------------------
+# Main-page uploader launcher + current logs as pill tags
+# ---------------------------------------------------------------------------
+
+upload_col, logs_col = st.columns([1.2, 1])
+
+with upload_col:
+    st.subheader("Upload CSV logs")
+    st.write("Add one or more CSV files as pycoustic logs.")
+
+    if st.button("Open CSV upload dialog", use_container_width=True):
+        ss["show_upload_modal"] = True
+        st.rerun()
+
+    if ss.get("last_upload_ts"):
+        st.caption(f"Last upload: {ss['last_upload_ts']}")
+
+with logs_col:
+    st.subheader("Current Logs")
+
+    logs = ss.get("logs", {})
+    num_logs = len(logs)
+
+    if num_logs:
+        tags_html = """
+        <style>
+        .log-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-bottom: 0.5rem;
+        }
+        .log-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            background-color: #f0f2f6;
+            color: #262730;
+            font-size: 0.8rem;
+            border: 1px solid rgba(49, 51, 63, 0.15);
+            white-space: nowrap;
+        }
+        .log-tag-count {
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+            color: #4b4b4b;
+        }
+        </style>
+        """
+
+        tags_html += '<div class="log-tag-count">'
+        tags_html += f"{num_logs} log{'s' if num_logs != 1 else ''} loaded:"
+        tags_html += "</div>"
+
+        tags_html += '<div class="log-tags-container">'
+        for name in logs.keys():
+            safe_name = str(name).replace("<", "&lt;").replace(">", "&gt;")
+            tags_html += f'<span class="log-tag">{safe_name}</span>'
+        tags_html += "</div>"
+
+        st.markdown(tags_html, unsafe_allow_html=True)
+    else:
+        st.info("No logs loaded yet.")
+
+    if st.button("Reset", use_container_width=True):
+        _cleanup_tmp_files(ss.get("tmp_paths", []))
+        ss["tmp_paths"] = []
+        ss["logs"] = {}
+        ss["resi_df"] = pd.DataFrame()
+        ss["leq_df"] = pd.DataFrame()
+        ss["lmax_df"] = pd.DataFrame()
+        ss["modal_df"] = pd.DataFrame()
+        ss["pending_uploads"] = []
+        ss["num_logs"] = 0
+        ss["last_upload_ts"] = None
+        st.rerun()
+
+if ss.get("show_upload_modal"):
+    show_upload_modal()
 
 # Build the survey
 survey = pc.Survey()
