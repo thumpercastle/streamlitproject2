@@ -180,6 +180,7 @@ for name, lg in ss["logs"].items():
     survey.add_log(data=lg, name=name)
 
 survey.set_periods(times=default_times)
+ss["modal_df"] = survey.modal()
 
 # Sidebar menu
 with st.sidebar:
@@ -457,6 +458,6 @@ for idx, (name, log) in enumerate(log_items, start=1):
 
         # TODO: Value counts
         # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
-        counts = pd.DataFrame(survey.counts())
-        st.dataframe(counts, key="counts", width="stretch")
+        # counts = survey.counts()
+        st.dataframe(ss["modal_df"], key="counts", width="stretch")
         # st.bar_chart(counts, use_container_width=True)
