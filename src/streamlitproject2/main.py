@@ -462,14 +462,15 @@ for idx, (name, log) in enumerate(log_items, start=1):
         st.markdown(f"## {name} resampled data")
         st.dataframe(graph_df, key="master", width="stretch")
 
-        # TODO: Value counts
+        # TODO: Enable value counts for other parameters
         # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
         # counts = survey.counts()
-        st.dataframe(ss["counts"].loc[name], key="counts", width="stretch")
-        count_graph = ss["counts"].loc[name]["Daytime"]
-        st.bar_chart(count_graph)
+        # st.dataframe(ss["counts"].loc[name], key="counts", width="stretch")
+
+        st.markdown(f"## {name} value counts")
         fig = ss["counts"].loc[name].plot.bar()
-        st.plotly_chart(fig)
+        st.plotly_chart(fig, y="Occurrences", color="Period", theme=None)
+
 
 
 
