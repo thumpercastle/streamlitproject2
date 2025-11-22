@@ -7,6 +7,7 @@ import pandas as pd
 from typing import Dict, Tuple
 import plotly.graph_objects as go
 
+
 from st_config import (
     init_app_state,
     TEMPLATE,
