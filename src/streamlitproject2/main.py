@@ -468,7 +468,7 @@ for idx, (name, log) in enumerate(log_items, start=1):
         st.dataframe(ss["counts"].loc[name], key="counts", width="stretch")
 
         st.markdown(f"## {name} L90 value counts")
-        fig = ss["counts"].loc[name].plot.bar()
+        fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
         st.plotly_chart(fig, config={
             "y": "Occurrences",
             "x": "dB",
