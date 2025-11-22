@@ -468,4 +468,9 @@ for idx, (name, log) in enumerate(log_items, start=1):
         st.dataframe(ss["counts"].loc[name], key="counts", width="stretch")
         count_graph = ss["counts"].loc[name]["Daytime"]
         st.bar_chart(count_graph)
+        fig = ss["counts"].loc[name].plot.bar()
+        st.plotly_chart(fig)
+
+
+
         # st.bar_chart(counts, use_container_width=True)

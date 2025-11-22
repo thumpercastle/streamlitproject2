@@ -30,6 +30,7 @@ def init_app_state() -> st.session_state:
     ss.setdefault("num_logs", 0)
     ss.setdefault("pending_uploads", [])
     ss.setdefault("last_upload_ts", None)
+    pd.options.plotting.backend = "plotly"
     return ss
 
 default_times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
