@@ -456,5 +456,6 @@ for idx, (name, log) in enumerate(log_items, start=1):
         st.dataframe(graph_df, key="master", width="stretch")
 
         # TODO: Value counts
-        # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
-        # st.bar_chart(counts, use_container_width=True)
+        counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
+        st.dataframe(counts, key="counts", width="stretch")
+        st.bar_chart(counts, use_container_width=True)
