@@ -394,9 +394,9 @@ with tabs[0]:
 
             st.markdown("Counts")
             ss["counts"] = survey.counts()
-            st.dataframe(ss["counts"], key="counts", width="stretch")
-            count_graph = survey.counts()["Daytime"]
-            st.dataframe(count_graph, key="count_graph", width="stretch")
+
+            # st.dataframe(count_graph, key="count_graph", width="stretch")
+            st.bar_chart(count_graph)
 
 
 # One tab per log - assumes the same layout in each
@@ -465,5 +465,6 @@ for idx, (name, log) in enumerate(log_items, start=1):
         # TODO: Value counts
         # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
         # counts = survey.counts()
-
+        st.dataframe(ss["counts"].loc[name], key="counts", width="stretch")
+        count_graph = ss["counts"].loc[name]["Daytime"]
         # st.bar_chart(counts, use_container_width=True)
