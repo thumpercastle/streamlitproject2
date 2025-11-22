@@ -7,80 +7,28 @@ import pandas as pd
 from typing import Dict, Tuple
 import plotly.graph_objects as go
 
+from st_config import (
+    init_app_state,
+    TEMPLATE,
+    COLOURS,
+    get_data,
+    convert_for_download,
+    _cleanup_tmp_files,
+    parse_times,
+    default_times
+)
+
+ss = init_app_state()
+
+st.set_page_config(page_title="pycoustic GUI", layout="wide")
+st.title("pycoustic Streamlit GUI")
+
 #TODO: Evening periods don't work on Streamlit
 #TODO: Move 'Lmax period' drop down into Lmax tab
 #TODO: Add modal and counts bar chart
 #TODO: Add titles to graphs
 #TODO: Tidy buttons and info on graph page.
 
-
-
-# Graph colour palette config
-COLOURS = {
-    "Leq A": "#FBAE18",   # light grey
-    "L90 A": "#4d4d4d",   # dark grey
-    "Lmax A": "#B51724",  # red
-}
-# Graph template config
-TEMPLATE = "plotly"
-
-st.set_page_config(page_title="pycoustic GUI", layout="wide")
-st.title("pycoustic Streamlit GUI")
-
-# Session state
-ss = st.session_state
-ss.setdefault("tmp_paths", [])
-ss.setdefault("logs", {})          # Dict[str, pc.Log]
-ss.setdefault("resi_df", pd.DataFrame())
-ss.setdefault("leq_df", pd.DataFrame())
-ss.setdefault("lmax_df", pd.DataFrame())
-ss.setdefault("modal_df", pd.DataFrame())
-ss.setdefault("survey", pc.Survey())
-ss.setdefault("num_logs", 0)
-
-times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
-
-
-@st.cache_data
-def get_data():
-    df = pd.DataFrame(
-        columns=["Time", "Leq A", "Lmax A", "L90 A",
-                 "Leq 63", "Leq 125", "Leq 250", "Leq 500", "Leq 1000", "Leq 2000", "Leq 4000", "Leq 8000",
-                 "Lmax 63", "Lmax 125", "Lmax 250", "Lmax 500", "Lmax 1000", "Lmax 2000", "Lmax 4000", "Lmax 8000",
-                 "L90 63", "L90 125", "L90 250", "L90 500", "L90 1000", "L90 2000", "L90 4000", "L90 8000"]
-    )
-    return df
-
-@st.cache_data
-def convert_for_download(df):
-    return df.to_csv(index=False).encode("utf-8")
-
-
-def _cleanup_tmp_files(paths):
-    for p in paths:
-        try:
-            os.remove(p)
-        except Exception:
-            pass
-
-def parse_times(day_start: dt.time, evening_start: dt.time, night_start: dt.time) -> Dict[str, Tuple[int, int]]:
-    """
-    Convert datetime.time objects to a dict of (hour, minute) tuples.
-
-    Example output:
-        {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
-    """
-    def to_hm(t: dt.time) -> Tuple[int, int]:
-        if not isinstance(t, dt.time):
-            raise TypeError(f"Expected datetime.time, got {type(t).__name__}")
-        return t.hour, t.minute
-
-    t = {
-        "day": to_hm(day_start),
-        "evening": to_hm(evening_start),
-        "night": to_hm(night_start),
-    }
-    return t
 
 #TODO: Add option for user input for log names.
 with st.popover("Data Loader", width="stretch"):
@@ -162,7 +110,7 @@ survey = pc.Survey()
 for name, lg in ss["logs"].items():
     survey.add_log(data=lg, name=name)
 
-survey.set_periods(times=times)
+survey.set_periods(times=default_times)
 
 # Sidebar menu
 with st.sidebar:
