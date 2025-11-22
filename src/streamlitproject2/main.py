@@ -180,7 +180,7 @@ for name, lg in ss["logs"].items():
     survey.add_log(data=lg, name=name)
 
 survey.set_periods(times=default_times)
-ss["counts"] = survey.counts()
+
 
 # Sidebar menu
 with st.sidebar:
@@ -326,7 +326,7 @@ with tabs[0]:
 
 
         # Compute and display resi_summary directly from current logs
-        st.subheader("Modal values")
+        st.subheader("Modal and Value Counts")
         st.text("Note: Ignore the 'Date' label.")
         modal_container = st.container()
 
@@ -391,6 +391,12 @@ with tabs[0]:
                         st.info("Run modal() to see results here.")
                 except Exception as e:
                     st.error(f"Failed to compute modal: {e}")
+
+            st.markdown("Counts")
+            ss["counts"] = survey.counts()
+            st.dataframe(ss["counts"], key="counts", width="stretch")
+            count_graph = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
+            st.dataframe(count_graph, key="count_graph", width="stretch")
 
 
 # One tab per log - assumes the same layout in each
@@ -459,6 +465,5 @@ for idx, (name, log) in enumerate(log_items, start=1):
         # TODO: Value counts
         # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
         # counts = survey.counts()
-        st.markdown("Counts")
-        st.dataframe(ss["counts"], key="counts", width="stretch")
+
         # st.bar_chart(counts, use_container_width=True)
