@@ -25,6 +25,7 @@ def init_app_state() -> st.session_state:
     ss.setdefault("leq_df", pd.DataFrame())
     ss.setdefault("lmax_df", pd.DataFrame())
     ss.setdefault("modal_df", pd.DataFrame())
+    ss.setdefault("counts", pd.DataFrame())
     ss.setdefault("survey", pc.Survey())
     ss.setdefault("num_logs", 0)
     ss.setdefault("pending_uploads", [])
