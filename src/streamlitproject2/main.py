@@ -480,7 +480,7 @@ def page_2():
 
             st.markdown(f"## {name} L90 value counts")
             fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
-            st.plotly_chart(fig, config={
+            st.plotly_chart(fig, key="counts", config={
                 "y": "Occurrences",
                 "x": "dB",
                 "color": "Period",
