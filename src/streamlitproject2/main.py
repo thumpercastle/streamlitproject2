@@ -440,7 +440,7 @@ def page_3():
     # Overview tab content
 
     # One tab per log - assumes the same layout in each
-    for idx, (name, log) in enumerate(log_items, start=1):
+    for idx, (name, log) in enumerate(log_items, start=0):
         with tabs[idx]:
             period = st.selectbox(
                 label="Resample period (minutes). Must be >= survey measurement period.",
