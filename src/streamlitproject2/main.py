@@ -476,11 +476,11 @@ def page_2():
             # TODO: Enable value counts for other parameters
             # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
             # counts = survey.counts()
-            st.dataframe(ss["counts"].loc[name], key="counts_df", width="stretch")
+            st.dataframe(ss["counts"].loc[name], key=f"counts_df_{name}", width="stretch")
 
             st.markdown(f"## {name} L90 value counts")
             fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
-            st.plotly_chart(fig, key="counts_bar", config={
+            st.plotly_chart(fig, key=f"counts_bar_{name}", config={
                 "y": "Occurrences",
                 "x": "dB",
                 "color": "Period",
