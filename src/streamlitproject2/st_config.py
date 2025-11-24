@@ -15,6 +15,7 @@ COLOURS = {
 # Graph template config
 TEMPLATE = "plotly"
 
+default_times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
 
 # Session state
 def init_app_state() -> st.session_state:
@@ -30,10 +31,11 @@ def init_app_state() -> st.session_state:
     ss.setdefault("num_logs", 0)
     ss.setdefault("pending_uploads", [])
     ss.setdefault("last_upload_ts", None)
+    ss.setdefault("times", default_times)
     pd.options.plotting.backend = "plotly"
     return ss
 
-default_times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
+
 
 
 @st.cache_data

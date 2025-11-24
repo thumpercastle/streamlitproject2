@@ -185,6 +185,7 @@ def page_1():
         survey.add_log(data=lg, name=name)
 
     survey.set_periods(times=default_times)
+    ss["survey"] = survey
 
 
     # Sidebar menu
@@ -207,6 +208,7 @@ def page_1():
         night_start = st.time_input("Set Night Period Start", dt.time(23, 00), on_change=st.rerun)
         st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
         times = parse_times(day_start, evening_start, night_start)
+        ss["times"] = times
         survey.set_periods(times=times)
         st.text(" ")
         st.text("Known error: If you add data to your csv, and then delete some cells before uploading, the app may not like it. Fix: Once you have deleted the cells you need to, create a copy of your tab in Excel, and then delete the old tab. This makes a fresh CSV that the app can handle.")
@@ -215,13 +217,17 @@ def page_1():
     #TODO: Implement tabs with graphs for each log.
 
     # Line 151: create tabs dynamically for each log in ss["logs"], with an Overview tab first
-    log_items = list(ss.get("logs", {}).items())
 
+
+
+
+def page_2():
+    log_items = list(ss.get("logs", {}).items())
     tab_labels = ["Overview"] + [name for name, _ in log_items]
     tabs = st.tabs(tab_labels)
 
-def page_2():
     # Overview tab content
+
     with tabs[0]:
         st.header("Overview")
         if not log_items:
@@ -236,7 +242,7 @@ def page_2():
                     st.info("No logs loaded yet.")
                 else:
                     try:
-                        df = survey.resi_summary()  # Always a DataFrame per your note
+                        df = ss["survey"].resi_summary()  # Always a DataFrame per your note
                         ss["resi_df"] = df
 
                         st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
@@ -262,7 +268,7 @@ def page_2():
                     st.info("No logs loaded yet.")
                 else:
                     try:
-                        df = survey.leq_spectra()  # Always a DataFrame per your note
+                        df = ss["survey"].leq_spectra()  # Always a DataFrame per your note
                         ss["leq_df"] = df
 
                         st.success(f"Leq spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
@@ -313,12 +319,12 @@ def page_2():
                     st.info("No logs loaded yet.")
                 else:
                     try:
-                        df = survey.lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
+                        df = ss["survey"].lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
                         ss["lmax_df"] = df
                         st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
                         # Show cached result on rerun
                         # Notify user if evening period disabled
-                        if per == "evenings" and times["evening"] == times["night"]:
+                        if per == "evenings" and ss["times"]["evening"] == ss["times"]["night"]:
                             st.info("Evenings are currently disabled. Enable them by setting the times in the sidebar.")
                         if not ss["lmax_df"].empty:
                             st.dataframe(ss["lmax_df"], key="lmax_df", width="stretch")
@@ -380,7 +386,7 @@ def page_2():
                     st.info("No logs loaded yet.")
                 else:
                     try:
-                        df = survey.modal(
+                        df = ss["survey"].modal(
                             cols=par_tup,
                             by_date=False,
                             day_t=day_t,
@@ -398,7 +404,7 @@ def page_2():
                         st.error(f"Failed to compute modal: {e}")
 
                 st.markdown("Counts")
-                ss["counts"] = survey.counts()
+                ss["counts"] = ss["survey"].counts()
 
                 # st.dataframe(count_graph, key="count_graph", width="stretch")
 
