@@ -187,7 +187,17 @@ def page_1():
     survey.set_periods(times=default_times)
     ss["survey"] = survey
 
-
+    st.divider()
+    st.markdown("# Survey Config")
+    st.markdown("## Set Time Periods")
+    day_start = st.time_input("Set Day Period Start", dt.time(7, 00), on_change=st.rerun)
+    evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00), on_change=st.rerun)
+    night_start = st.time_input("Set Night Period Start", dt.time(23, 00), on_change=st.rerun)
+    st.text(
+        "If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
+    times = parse_times(day_start, evening_start, night_start)
+    ss["times"] = times
+    survey.set_periods(times=times)
 
     # Sidebar menu
     with st.sidebar:
@@ -202,15 +212,6 @@ def page_1():
             mime="text/csv",
             icon=":material/download:",
         )
-        st.markdown("# Survey Config")
-        st.markdown("## Set Time Periods")
-        day_start = st.time_input("Set Day Period Start", dt.time(7, 00), on_change=st.rerun)
-        evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00), on_change=st.rerun)
-        night_start = st.time_input("Set Night Period Start", dt.time(23, 00), on_change=st.rerun)
-        st.text("If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
-        times = parse_times(day_start, evening_start, night_start)
-        ss["times"] = times
-        survey.set_periods(times=times)
         st.text(" ")
         st.text("Known error: If you add data to your csv, and then delete some cells before uploading, the app may not like it. Fix: Once you have deleted the cells you need to, create a copy of your tab in Excel, and then delete the old tab. This makes a fresh CSV that the app can handle.")
 
@@ -516,7 +517,11 @@ def page_3():
                 "theme": None
             }) #TODO: These kwargs don't work.
 
-pg = st.navigation([page_1, page_2, page_3])
+pg = st.navigation([
+    st.Page(page_1, title="Data Loader"),
+    st.Page(page_2, title="Survey Overview"),
+    st.Page(page_3, title="Individual Logs")
+])
 pg.run()
 
         # st.bar_chart(counts, use_container_width=True)
