@@ -190,11 +190,15 @@ def page_1():
     st.divider()
     st.markdown("# Survey Config")
     st.markdown("## Set Time Periods")
-    day_start = st.time_input("Set Day Period Start", dt.time(7, 00), on_change=st.rerun)
-    evening_start = st.time_input("Set Evening Period Start", dt.time(23, 00), on_change=st.rerun)
-    night_start = st.time_input("Set Night Period Start", dt.time(23, 00), on_change=st.rerun)
+    day_col, eve_col, night_col = st.columns([1, 1, 1])
+    with day_col:
+        day_start = st.time_input("Daytime Start", dt.time(7, 00), on_change=st.rerun)
+    with eve_col:
+        evening_start = st.time_input("Evening Start*", dt.time(23, 00), on_change=st.rerun)
+    with night_col:
+        night_start = st.time_input("Night-time Start**", dt.time(23, 00), on_change=st.rerun)
     st.text(
-        "If Evening starts at the same time as Night, Evening periods will be disabled (default). Night must cross over midnight")
+        "*If Evening starts at the same time as Night, Evening periods will be disabled (default). **Night-time must cross over midnight")
     times = parse_times(day_start, evening_start, night_start)
     ss["times"] = times
     survey.set_periods(times=times)
