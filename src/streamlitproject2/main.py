@@ -110,7 +110,7 @@ def page_1():
         @st.dialog("Data Loader", width="large")
         def data_loader_dialog():
             col_add = st.columns(1)
-            with col_add:
+            with col_add[0]:
                 st.subheader("1. Upload CSV logs")
                 _render_upload_modal_contents()
             #
