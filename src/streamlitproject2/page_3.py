@@ -98,9 +98,10 @@ def vis_page():
             # TODO: Enable value counts for other parameters
             # TODO: Customise plots, amend axis labels
 
-            st.markdown(f"## {name} L90 Value Counts")
-            st.text(f"Values = {ss["modal_params"][0]}, Daytime T = {ss["modal_params"][1]}min,"
-                    f"Evening T = {ss['modal_params'][2]}min,"
+            st.markdown(f"## {name} Counts")
+            st.text(f"Values = {ss["modal_params"][0][0]} {ss["modal_params"][0][1]}\n"
+                    f"Daytime T = {ss["modal_params"][1]}min\n"
+                    f"Evening T = {ss['modal_params'][2]}min\n"
                     f"Night T = {ss['modal_params'][3]}min")
             st.text("Change these settings on the 'Analysis' page, under the 'Modal and Counts' tab")
             counts_df = ss["survey"].counts()
