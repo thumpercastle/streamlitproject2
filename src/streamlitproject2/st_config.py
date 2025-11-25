@@ -113,24 +113,12 @@ def _render_upload_modal_contents() -> None:
     """
     Render the contents of the CSV upload modal.
 
-    Uses session_state keys:
-        pending_uploads  : list[dict] of staged uploads
-        logs             : mapping of name -> pc.Log
-        tmp_paths        : list of temporary file paths
-        show_upload_modal: bool, whether modal is open
-        last_upload_ts   : datetime of last successful upload
-        num_logs         : int, number of logs loaded
+    Uses:
+        ss["pending_uploads"]  : list[dict] of staged uploads
+        ss["logs"]             : mapping of name -> pc.Log
+        ss["tmp_paths"]        : list of temporary file paths
+        ss["show_upload_modal"]: bool, whether modal is open
     """
-    ss = st.session_state
-
-    # Ensure required keys exist
-    ss.setdefault("pending_uploads", [])
-    ss.setdefault("logs", {})
-    ss.setdefault("tmp_paths", [])
-    ss.setdefault("show_upload_modal", False)
-    ss.setdefault("last_upload_ts", None)
-    ss.setdefault("num_logs", 0)
-
     uploaded_files = st.file_uploader(
         "Select CSV files",
         type=["csv"],
@@ -139,8 +127,9 @@ def _render_upload_modal_contents() -> None:
         help="You can add multiple CSV files at once.",
     )
 
+    ss = st.session_state
     # Pending uploads in session state
-    queue: list[dict] = ss.get("pending_uploads", [])
+    queue = ss.get("pending_uploads", [])
     # Use content hash to avoid duplicates of the same file
     known_hashes = {item["hash"] for item in queue if "hash" in item}
 
@@ -163,7 +152,7 @@ def _render_upload_modal_contents() -> None:
         )
 
     # Allow user to rename or remove staged items
-    removal_ids: List[str] = []
+    removal_ids: list[str] = []
     for item in queue:
         name_col, action_col = st.columns([3, 1])
         with name_col:
@@ -182,7 +171,7 @@ def _render_upload_modal_contents() -> None:
     if removal_ids:
         queue = [item for item in queue if item["id"] not in removal_ids]
         for removed_id in removal_ids:
-            ss.pop(f"log_name_{removed_id}", None)
+            st.session_state.pop(f"log_name_{removed_id}", None)
 
     _update_pending_uploads(queue)
 
@@ -217,7 +206,7 @@ def _render_upload_modal_contents() -> None:
     # When "Add" is clicked, convert staged uploads to pc.Log objects
     if add_clicked and queue:
         existing_names = set(ss["logs"].keys())
-        succeeded_ids: List[str] = []
+        succeeded_ids: list[str] = []
         added = 0
 
         for item in list(queue):
@@ -257,7 +246,7 @@ def _render_upload_modal_contents() -> None:
             ss["num_logs"] = len(ss["logs"])
             # Clear name widgets for successfully added uploads
             for upload_id in succeeded_ids:
-                ss.pop(f"log_name_{upload_id}", None)
+                st.session_state.pop(f"log_name_{upload_id}", None)
             # Keep only the ones that failed (if any)
             queue = [item for item in queue if item["id"] not in succeeded_ids]
             _update_pending_uploads(queue)
@@ -265,4 +254,5 @@ def _render_upload_modal_contents() -> None:
             if not queue:
                 ss["show_upload_modal"] = False
             rerun_app()
+
 

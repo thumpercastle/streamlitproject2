@@ -73,6 +73,7 @@ def page_1():
         data_loader_dialog()
 
 
+
     # Build the survey
     survey = pc.Survey()
     for name, lg in ss["logs"].items():
