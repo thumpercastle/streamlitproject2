@@ -89,8 +89,8 @@ def page_1():
             use_container_width=True,
             key="home_template_download",
         )
-    col = st.columns(1)
-    with col:
+    cols = st.columns(1)
+    with cols[0]:
         if st.button(
                 "Reset logs and temp files",
                 use_container_width=True,
