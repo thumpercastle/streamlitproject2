@@ -16,7 +16,8 @@ from st_config import (
     convert_for_download,
     _cleanup_tmp_files,
     parse_times,
-    default_times
+    default_times,
+    _render_upload_modal_contents,
 )
 
 ss = init_app_state()
@@ -27,141 +28,31 @@ ss = init_app_state()
 #TODO: Add modal and counts bar chart
 #TODO: Add titles to graphs
 #TODO: Tidy buttons and info on graph page.
-
-
 #TODO: Add option for user input for log names.
-# TODO: Add option for user input for log names.
-
+#TODO: Add option for user input for log names.
 
 
 def page_1():
     st.set_page_config(page_title="pycoustic GUI", layout="wide")
     st.title("Data Loader")
 
+    # Ensure modal state exists
+    ss.setdefault("show_upload_modal", False)
 
-    # Button to open the Data Loader dialog
+    # Button to open the Data Loader modal
     if st.button("Open Data Loader"):
-        open_loader = True
-    else:
-        open_loader = False
+        ss["show_upload_modal"] = True
+        st.rerun()
 
-    if open_loader:
+    # Streamlit dialog opened only when flag is True
+    if ss.get("show_upload_modal", False):
 
         @st.dialog("Data Loader", width="large")
         def data_loader_dialog():
             col_add, col_reset = st.columns([1, 1])
             with col_add:
                 st.subheader("1. Upload CSV logs")
-
-                # Stage files into a "pending uploads" queue with custom names and removal support
-                uploaded_files = st.file_uploader(
-                    "Choose one or more CSV files",
-                    type=["csv"],
-                    accept_multiple_files=True,
-                    help="You can add multiple CSV files at once.",
-                    key="inline_log_uploader",
-                )
-
-                # Initialise or retrieve current queue
-                queue = ss.get("pending_uploads", [])
-                # Track names already in queue to avoid simple duplicates by original name
-                known_original_names = {item["original_name"] for item in queue}
-
-                for uploaded in uploaded_files or []:
-                    if uploaded.name in known_original_names:
-                        # Skip if an item with the same original name is already staged
-                        continue
-                    known_original_names.add(uploaded.name)
-                    file_bytes = uploaded.getvalue()
-                    default_name = os.path.splitext(os.path.basename(uploaded.name))[0]
-                    queue.append(
-                        {
-                            "original_name": uploaded.name,
-                            "data": file_bytes,
-                            "custom_name": default_name,
-                            "size": len(file_bytes),
-                        }
-                    )
-
-                # Allow user to edit names and remove staged files
-                removal_indices = []
-                for idx, item in enumerate(queue):
-                    name_col, action_col = st.columns([3, 1])
-                    with name_col:
-                        label = f"Name for {item['original_name']}"
-                        item["custom_name"] = st.text_input(
-                            label=label,
-                            value=item.get("custom_name", ""),
-                            key=f"log_name_pending_{idx}",
-                            help="Enter a unique name for this log.",
-                        ).strip()
-                    with action_col:
-                        if st.button("Remove", key=f"remove_pending_{idx}", use_container_width=True):
-                            removal_indices.append(idx)
-
-                # Apply removals from queue and clean up any associated text inputs
-                if removal_indices:
-                    for idx in sorted(removal_indices, reverse=True):
-                        st.session_state.pop(f"log_name_pending_{idx}", None)
-                        queue.pop(idx)
-
-                # Persist updated queue back to session state
-                ss["pending_uploads"] = queue
-
-                # Final action: add staged files as logs
-                add_clicked = st.button(
-                    f"Add {len(queue)} file(s) as logs" if queue else "Add files as logs",
-                    disabled=not queue,
-                    use_container_width=True,
-                    key="inline_add_logs",
-                )
-
-                if add_clicked and queue:
-                    existing_names = set(ss["logs"].keys())
-                    added = 0
-
-                    # Work on a copy because we may clear queue after success
-                    for item in list(queue):
-                        default_name = os.path.splitext(os.path.basename(item["original_name"]))[0]
-                        custom_name = item.get("custom_name") or default_name
-                        if not custom_name:
-                            st.error(f"Name for {item['original_name']} cannot be empty.")
-                            continue
-
-                        # Ensure uniqueness
-                        sanitized_name = custom_name
-                        suffix = 1
-                        while sanitized_name in existing_names:
-                            sanitized_name = f"{custom_name}-{suffix}"
-                            suffix += 1
-                        existing_names.add(sanitized_name)
-
-                        # Persist the uploaded file to a temporary path for pycoustic to read
-                        tmp_file = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
-                        tmp_file.write(item["data"])
-                        tmp_file.flush()
-                        tmp_file.close()
-                        ss["tmp_paths"].append(tmp_file.name)
-
-                        try:
-                            log = pc.Log(tmp_file.name)
-                        except Exception as exc:
-                            st.error(f"Failed to create Log from {item['original_name']}: {exc}")
-                            continue
-
-                        ss["logs"][sanitized_name] = log
-                        added += 1
-
-                    if added:
-                        ss["last_upload_ts"] = dt.datetime.now()
-                        ss["num_logs"] = len(ss["logs"])
-                        ss["pending_uploads"] = []
-                        # Clear name inputs for a clean state next time
-                        for key in list(st.session_state.keys()):
-                            if key.startswith("log_name_pending_"):
-                                st.session_state.pop(key, None)
-                        st.success(f"Added {added} log(s).")
-                        st.rerun()
+                _render_upload_modal_contents()
 
             with col_reset:
                 st.subheader("2. Current Logs")
@@ -175,9 +66,12 @@ def page_1():
                     ss["tmp_paths"] = []
                     ss["logs"] = {}
                     ss["resi_df"] = pd.DataFrame()
+                    ss["pending_uploads"] = []
+                    ss["num_logs"] = 0
                     st.rerun()
 
         data_loader_dialog()
+
 
     # Build the survey
     survey = pc.Survey()
@@ -226,33 +120,33 @@ def page_1():
 
 def page_2():
     st.title("Survey Overview")
-    st.header("Overview")
+    # st.header("Overview")
     log_items = list(ss.get("logs", {}).items())
-    if not log_items:
-        st.info("No logs loaded yet.")
-    else:
-        # Compute and display resi_summary directly from current logs
-        st.subheader("Broadband Summary")
-        resi_container = st.container()
-
-        with resi_container:
-            if not bool(ss["logs"]):
-                st.info("No logs loaded yet.")
-            else:
-                try:
-                    df = ss["survey"].resi_summary()  # Always a DataFrame per your note
-                    ss["resi_df"] = df
-
-                    st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-                    # Show cached result on rerun
-                    if not ss["resi_df"].empty:
-                        st.dataframe(ss["resi_df"], key="resi_df", width="stretch")
-                    else:
-                        st.info("Run resi_summary() to see results here.")
-                except Exception as e:
-                    st.error(f"Failed to compute resi_summary: {e}")
-
-        st.divider()
+    # if not log_items:
+    #     st.info("No logs loaded yet.")
+    # else:
+    #     # Compute and display resi_summary directly from current logs
+    #     st.subheader("Broadband Summary")
+    #     resi_container = st.container()
+    #
+    #     with resi_container:
+    #         if not bool(ss["logs"]):
+    #             st.info("No logs loaded yet.")
+    #         else:
+    #             try:
+    #                 df = ss["survey"].resi_summary()  # Always a DataFrame per your note
+    #                 ss["resi_df"] = df
+    #
+    #                 st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+    #                 # Show cached result on rerun
+    #                 if not ss["resi_df"].empty:
+    #                     st.dataframe(ss["resi_df"], key="resi_df", width="stretch")
+    #                 else:
+    #                     st.info("Run resi_summary() to see results here.")
+    #             except Exception as e:
+    #                 st.error(f"Failed to compute resi_summary: {e}")
+    #
+    #     st.divider()
 
 
 
