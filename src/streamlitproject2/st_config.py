@@ -1,4 +1,5 @@
 import os
+import io
 import hashlib
 import tempfile
 import pandas as pd
@@ -312,3 +313,48 @@ def _reset_workspace() -> None:
     ss["last_upload_ts"] = None
     ss["global_resample_period"] = 15
     st.rerun()
+
+
+def _export_frames_to_excel(frames: dict[str, pd.DataFrame]) -> bytes:
+    """Convert multiple DataFrames into a single Excel workbook."""
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        for sheet_name, frame in frames.items():
+            if frame.empty:
+                continue
+            writer_sheet = sheet_name[:31] or "Sheet1"
+            export_frame = frame.copy()
+            if isinstance(export_frame.columns, pd.MultiIndex):
+                export_frame.columns = [
+                    " | ".join(str(level) for level in col if level not in (None, ""))
+                    for col in export_frame.columns.to_flat_index()
+                ]
+            if isinstance(export_frame.index, pd.MultiIndex):
+                export_frame = export_frame.reset_index()
+            export_frame.to_excel(writer, sheet_name=writer_sheet, index=False)
+    output.seek(0)
+    return output.getvalue()
+
+
+def _to_time(hours: int, minutes: int) -> dt.time:
+    return dt.time(hours, minutes)
+
+
+def _build_survey(
+    times: Dict[str, Tuple[int, int]] | None = None,
+    log_names: Iterable[str] | None = None,
+) -> pc.Survey:
+    """Create a Survey populated with logs currently in session state."""
+    survey = pc.Survey()
+    logs = st.session_state.get("logs", {})
+    if log_names:
+        for name in log_names:
+            if name in logs:
+                survey.add_log(data=logs[name], name=name)
+    else:
+        for name, log in logs.items():
+            survey.add_log(data=log, name=name)
+    if times:
+        survey.set_periods(times=times)
+    return survey
+
