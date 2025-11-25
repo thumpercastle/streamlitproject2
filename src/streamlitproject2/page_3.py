@@ -124,7 +124,7 @@ def vis_page():
             # 3) Now show it in Streamlit
             # TODO: Avoid 'stacked' bar chart
 
-            ss["counts_facet_overlap"] = st.toggle("Stacked", False, key=f"counts_overlap_{name}", on_change=st.rerun)
+            ss["counts_facet_overlap"] = st.toggle("Stacked", False, key=f"counts_overlap_{name}")
             if ss["counts_facet_overlap"]:
                 fig = ss["counts"].loc[name].plot.bar()
             else:
