@@ -251,7 +251,7 @@ def page_2():
 
                 try:
                     df = ss["survey"].modal(
-                        cols=par_tup,
+                        cols=[par_tup],
                         by_date=False,
                         day_t=day_t,
                         evening_t=eve_t,
@@ -269,7 +269,7 @@ def page_2():
 
                 try:
                     df = ss["survey"].counts(
-                        cols=par_tup,
+                        cols=[par_tup],
                         day_t=day_t,
                         evening_t=eve_t,
                         night_t=night_t
