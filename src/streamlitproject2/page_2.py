@@ -8,8 +8,8 @@ from st_config import (
 
 ss = init_app_state()
 
-def page_2():
-    st.title("Analysis & Visualisation")
+def analysis_page():
+    st.title("Analysis")
     st.markdown(
         "> Explore broadband summaries, spectra, modal values, and download-ready datasets derived from your uploaded logs."
     )

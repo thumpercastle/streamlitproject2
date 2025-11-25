@@ -17,11 +17,15 @@ from st_config import (
 ss = init_app_state()
 
 
-def page_3():
-    st.title("Individual Logs")
-    log_items = list(ss.get("logs", {}).items())
+def vis_page():
+    st.title("Visualisation")
+
+    log_items = list(ss["logs"].keys())
+
     if not log_items:
-        st.info("No logs loaded yet.")
+        st.warning("No logs have been uploaded yet. Use the Home page to add data.", icon=":material/info:")
+        st.stop()
+
     tab_labels = [name for name, _ in log_items]
     tabs = st.tabs(tab_labels)
 
@@ -109,6 +113,17 @@ def page_3():
             df_counts_plot.columns = [str(c) for c in df_counts_plot.columns]
 
             # 3) Now show it in Streamlit
+            fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
+            st.plotly_chart(fig, key=f"counts_bar_{name}", config={
+                "y": "Occurrences",
+                "x": "dB",
+                "color": "Period",
+                "theme": None
+            }) #TODO: These kwargs don't work.
             st.dataframe(df_counts_plot)
+
+            # TODO: Enable value counts for other parameters
+            # st.dataframe(ss["counts"].loc[name], key=f"counts_df_{name}", width="stretch")
+
 
             # st.dataframe(ss["counts"].loc[name], key=f"counts_df_{name}", width="stretch")

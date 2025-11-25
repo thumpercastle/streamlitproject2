@@ -26,7 +26,7 @@ from st_config import (
 ss = init_app_state()
 
 
-def page_1():
+def config_page():
     st.set_page_config(page_title="pycoustic GUI", layout="wide")
     # st.title("Data Loader")
 

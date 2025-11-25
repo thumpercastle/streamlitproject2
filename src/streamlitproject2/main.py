@@ -23,27 +23,22 @@ from st_config import (
     _reset_workspace
 )
 
-from page_1 import page_1
-from page_2 import page_2
-from page_3 import page_3
+from page_1 import config_page
+from page_2 import analysis_page
+from page_3 import vis_page
 
 ss = init_app_state()
 
 
-#TODO: Evening periods don't work on Streamlit
-#TODO: Move 'Lmax period' drop down into Lmax tab
 #TODO: Add modal and counts bar chart
 #TODO: Add titles to graphs
 #TODO: Tidy buttons and info on graph page.
-#TODO: Add option for user input for log names.
-#TODO: Add option for user input for log names.
-
 
 
 pg = st.navigation([
-    st.Page(page_1, title="Data Loader"),
-    st.Page(page_2, title="Survey Overview"),
-    st.Page(page_3, title="Individual Logs")
+    st.Page(config_page, title="Data Loader"),
+    st.Page(analysis_page, title="Analysis"),
+    st.Page(vis_page, title="Visualisation")
 ])
 
 # Sidebar menu
@@ -51,5 +46,3 @@ with st.sidebar:
     st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
 
 pg.run()
-
-        # st.bar_chart(counts, use_container_width=True)
