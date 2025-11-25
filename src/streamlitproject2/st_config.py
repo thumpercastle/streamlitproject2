@@ -21,6 +21,7 @@ TEMPLATE = "plotly"
 
 default_times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
 
+ss = st.session_state
 
 TEMPLATE_COLUMNS = [
     "Time",
@@ -88,11 +89,11 @@ def get_data():
 def convert_for_download(df):
     return df.to_csv(index=False).encode("utf-8")
 
-
-def _cleanup_tmp_files(paths):
-    for p in paths:
+def _cleanup_tmp_files(paths: Iterable[str]) -> None:
+    """Remove cached temp files guarding against missing files."""
+    for path in paths:
         try:
-            os.remove(p)
+            os.remove(path)
         except Exception:
             pass
 
@@ -285,12 +286,29 @@ def _render_upload_modal_contents() -> None:
 
 
 @st.cache_data
-def get_template_dataframe() -> pd.DataFrame:
+def _get_template_dataframe() -> pd.DataFrame:
     """Return a template DataFrame for the CSV download."""
     return pd.DataFrame(columns=TEMPLATE_COLUMNS)
 
 
 @st.cache_data
-def convert_for_download(df: pd.DataFrame) -> bytes:
+def _convert_for_download(df: pd.DataFrame) -> bytes:
     """Convert a DataFrame to CSV bytes for download."""
     return df.to_csv(index=False).encode("utf-8")
+
+
+def _reset_workspace() -> None:
+    _cleanup_tmp_files(ss.get("tmp_paths", []))
+    ss["tmp_paths"] = []
+    ss["logs"] = {}
+    ss["resi_df"] = pd.DataFrame()
+    ss["leq_df"] = pd.DataFrame()
+    ss["lmax_df"] = pd.DataFrame()
+    ss["modal_df"] = pd.DataFrame()
+    ss["resampled_df"] = pd.DataFrame()
+    ss["resampled_dfs"] = {}
+    ss["pending_uploads"] = []
+    ss["num_logs"] = 0
+    ss["last_upload_ts"] = None
+    ss["global_resample_period"] = 15
+    st.rerun()

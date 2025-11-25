@@ -13,13 +13,13 @@ from st_config import (
     TEMPLATE,
     COLOURS,
     get_data,
-    convert_for_download,
+    _convert_for_download,
     _cleanup_tmp_files,
     parse_times,
     default_times,
     _render_upload_modal_contents,
-    get_template_dataframe,
-    convert_for_download,
+    _get_template_dataframe,
+    _convert_for_download,
 )
 
 ss = init_app_state()
@@ -72,7 +72,7 @@ def page_1():
     else:
         st.warning("No logs uploaded yet. Use the **Upload CSV logs** button below to get started.")
 
-    template_df = get_template_dataframe()
+    template_df = _get_template_dataframe()
     action_cols = st.columns(2)
     with action_cols[0]:
         if st.button("Upload CSV logs", type="primary", icon=":material/upload_file:", use_container_width=True):
@@ -81,7 +81,7 @@ def page_1():
     with action_cols[1]:
         st.download_button(
             label="Download template CSV",
-            data=convert_for_download(template_df),
+            data=_convert_for_download(template_df),
             file_name="pycoustic-template.csv",
             mime="text/csv",
             icon=":material/download:",
@@ -473,7 +473,7 @@ with st.sidebar:
     st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
     st.markdown("# Download Template CSV")
     df = get_data()
-    csv = convert_for_download(df)
+    csv = _convert_for_download(df)
     st.download_button(
         label="Download CSV",
         data=csv,
