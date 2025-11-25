@@ -141,7 +141,6 @@ def page_1():
     survey.set_periods(times=default_times)
     ss["survey"] = survey
 
-    st.markdown("# Survey Config")
     st.markdown("## Set Time Periods")
     day_col, eve_col, night_col = st.columns([1, 1, 1])
     with day_col:
