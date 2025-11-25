@@ -212,7 +212,7 @@ def page_2():
                     night_t = str(night_t) + "min"
 
                 # Modal
-                st.markdown("###Modal")
+                st.markdown("## Modal")
                 try:
                     df = ss["survey"].modal(
                         cols=[par_tup],
@@ -222,7 +222,7 @@ def page_2():
                         night_t=night_t
                     )  # Always a DataFrame per your note
                     ss["modal_df"] = df
-                    st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                    # st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
                     # Show cached result on rerun
                     if not ss["modal_df"].empty:
                         st.dataframe(ss["modal_df"], key="modal_df", width="stretch")
@@ -232,7 +232,7 @@ def page_2():
                     st.error(f"Failed to compute modal: {e}")
 
                 # Value counts
-                st.markdown("###Counts")
+                st.markdown("## Counts")
                 try:
                     df = ss["survey"].counts(
                         cols=[par_tup],
@@ -241,7 +241,7 @@ def page_2():
                         night_t=night_t
                     )
                     ss["counts"] = df
-                    st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                    # st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
                     # Show cached result on rerun
                     if not ss["counts"].empty:
                         st.dataframe(ss["counts"], key="counts_df", width="stretch")

@@ -12,19 +12,7 @@ from st_config import (
     init_app_state,
     TEMPLATE,
     COLOURS,
-    get_data,
-    _convert_for_download,
-    _cleanup_tmp_files,
-    parse_times,
-    default_times,
-    _render_upload_modal_contents,
-    _get_template_dataframe,
-    _convert_for_download,
-    _reset_workspace
 )
-
-from page_1 import page_1
-from page_2 import page_2
 
 ss = init_app_state()
 
