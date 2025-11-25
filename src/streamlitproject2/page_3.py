@@ -56,6 +56,7 @@ def vis_page():
                         line=dict(color=COLOURS["Leq A"], width=2),
                     )
                 )
+                #TODO: Use plotly config kwarg
                 fig.add_trace(
                     go.Scatter(
                         x=graph_df.index,
@@ -93,9 +94,15 @@ def vis_page():
 
             st.markdown(f"## {name} resampled data")
             st.dataframe(graph_df, key="master", width="stretch")
-
+            st.divider()
             # TODO: Enable value counts for other parameters
-            # Suppose you computed this somewhere:
+            # TODO: Customise plots, amend axis labels
+
+            st.markdown(f"## {name} L90 Value Counts")
+            st.text(f"Values = {ss["modal_params"][0]}, Daytime T = {ss["modal_params"][1]}min,"
+                    f"Evening T = {ss['modal_params'][2]}min,"
+                    f"Night T = {ss['modal_params'][3]}min")
+            st.text("Change these settings on the 'Analysis' page, under the 'Modal and Counts' tab")
             counts_df = ss["survey"].counts()
 
             # Make a Streamlit‑friendly copy
@@ -120,7 +127,7 @@ def vis_page():
                 "color": "Period",
                 "theme": None
             }) #TODO: These kwargs don't work.
-            st.dataframe(df_counts_plot)
+
 
             # TODO: Enable value counts for other parameters
             # st.dataframe(ss["counts"].loc[name], key=f"counts_df_{name}", width="stretch")

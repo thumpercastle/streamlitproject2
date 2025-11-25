@@ -211,6 +211,7 @@ def analysis_page():
                     )
                     night_t = str(night_t) + "min"
 
+                ss["modal_params"] = [par_tup, day_t, eve_t, night_t]
                 # Modal
                 st.markdown("## Modal")
                 try:
