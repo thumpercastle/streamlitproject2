@@ -40,7 +40,7 @@ def page_1():
 
     st.title("Pycoustic Acoustic Survey Analyser")
     st.markdown(
-        "> Upload CSV logs, adjust survey periods from the sidebar, then explore broadband insights and interactive graphs."
+        "> Upload CSV logs, adjust survey periods below, then explore broadband insights and interactive graphs."
     )
 
     logs_loaded = len(ss["logs"])
@@ -60,11 +60,11 @@ def page_1():
                     unsafe_allow_html=True)
     with quick_cols[1]:
         st.markdown(
-            "**2. Review periods**<br/>Pick survey times from the sidebar so every page shares the same schedule.",
+            "**2. Review periods**<br/>Pick survey times from the menu below, so every page shares the same schedule.",
             unsafe_allow_html=True)
     with quick_cols[2]:
         st.markdown(
-            "**3. Explore outputs**<br/>Head to Analysis & Visualisation or Interactive Graphs once logs are ready.",
+            "**3. Explore outputs**<br/>Head to Survey Overview or Individual Logs once logs are ready.",
             unsafe_allow_html=True)
 
     if logs_loaded:
@@ -93,11 +93,6 @@ def page_1():
 
     # Ensure modal state exists
     ss.setdefault("show_upload_modal", False)
-
-    # Button to open the Data Loader modal
-    if st.button("Open Data Loader"):
-        ss["show_upload_modal"] = True
-        st.rerun()
 
     # Streamlit dialog opened only when flag is True
     if ss.get("show_upload_modal", False):
@@ -128,7 +123,6 @@ def page_1():
         data_loader_dialog()
 
 
-
     # Build the survey
     survey = pc.Survey()
     for name, lg in ss["logs"].items():
@@ -153,24 +147,21 @@ def page_1():
     ss["times"] = times
     survey.set_periods(times=times)
 
-    # Sidebar menu
-    with st.sidebar:
-        st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
-        st.markdown("# Download Template CSV")
-        df = get_data()
-        csv = convert_for_download(df)
-        st.download_button(
-            label="Download CSV",
-            data=csv,
-            file_name="pycoustic.csv",
-            mime="text/csv",
-            icon=":material/download:",
+    with st.expander("Maintenance", expanded=True):
+        if st.button(
+                "Reset logs and temp files",
+                use_container_width=True,
+                key="reset_logs_button",
+                help="Clears loaded logs, staged files, cached temp files, and analysis outputs.",
+        ):
+            _reset_workspace()
+        st.markdown(
+            "- If you edit CSV cells and then delete rows, create a fresh copy before exporting to avoid parsing issues.\n"
+            "- Evening periods are disabled when they match night start times; adjust above to restore evening summaries.\n"
+            "- Uploaded files stay queued until you add them as logs, so you can review names safely."
         )
-        st.text(" ")
-        st.text("Known error: If you add data to your csv, and then delete some cells before uploading, the app may not like it. Fix: Once you have deleted the cells you need to, create a copy of your tab in Excel, and then delete the old tab. This makes a fresh CSV that the app can handle.")
 
     st.divider()
-    #TODO: Implement tabs with graphs for each log.
 
     # Line 151: create tabs dynamically for each log in ss["logs"], with an Overview tab first
 
@@ -476,6 +467,24 @@ pg = st.navigation([
     st.Page(page_2, title="Survey Overview"),
     st.Page(page_3, title="Individual Logs")
 ])
+
+# Sidebar menu
+with st.sidebar:
+    st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
+    st.markdown("# Download Template CSV")
+    df = get_data()
+    csv = convert_for_download(df)
+    st.download_button(
+        label="Download CSV",
+        data=csv,
+        file_name="pycoustic.csv",
+        mime="text/csv",
+        icon=":material/download:",
+    )
+    st.text(" ")
+    st.text(
+        "Known error: If you add data to your csv, and then delete some cells before uploading, the app may not like it. Fix: Once you have deleted the cells you need to, create a copy of your tab in Excel, and then delete the old tab. This makes a fresh CSV that the app can handle.")
+
 pg.run()
 
         # st.bar_chart(counts, use_container_width=True)
