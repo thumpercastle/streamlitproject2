@@ -304,5 +304,5 @@ def page_2():
                 #         "theme": None
                 #     })  # TODO: These kwargs don't work.
 
-                    st.divider()
+
                 # st.dataframe(count_graph, key="count_graph", width="stretch")
