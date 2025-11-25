@@ -20,7 +20,7 @@ ss = init_app_state()
 def vis_page():
     st.title("Visualisation")
 
-    log_items = list(ss["logs"].keys())
+    log_items = list(ss["logs"].items())
 
     if not log_items:
         st.warning("No logs have been uploaded yet. Use the Home page to add data.", icon=":material/info:")
