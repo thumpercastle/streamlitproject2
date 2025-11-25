@@ -95,7 +95,7 @@ def page_3():
                     legend=dict(orientation="h", yanchor="top", y=-0.25, xanchor="left", x=0),
                     height=600,
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             else:
                 st.warning(f"Required columns {required_cols} missing in {name}.")
 
@@ -103,6 +103,24 @@ def page_3():
             st.dataframe(graph_df, key="master", width="stretch")
 
             # TODO: Enable value counts for other parameters
-            # counts = pd.DataFrame([survey.counts().loc[name]["Daytime"], survey.counts().loc[name]["Night-time"]]).T
-            # counts = survey.counts()
-            st.dataframe(ss["counts"].loc[name], key=f"counts_df_{name}", width="stretch")
+            # Suppose you computed this somewhere:
+            counts_df = ss["survey"].counts()
+
+            # Make a Streamlit‑friendly copy
+            df_counts_plot = counts_df.copy()
+
+            # 1) If columns are a MultiIndex, flatten them
+            if isinstance(df_counts_plot.columns, pd.MultiIndex):
+                flat_cols = []
+                for tpl in df_counts_plot.columns:
+                    # tpl may have length 1, 2, or more – join all levels into a string
+                    flat_cols.append(" ".join(str(x) for x in tpl if x is not None))
+                df_counts_plot.columns = flat_cols
+
+            # 2) Ensure all column names are strings (handles any leftover non‑str labels)
+            df_counts_plot.columns = [str(c) for c in df_counts_plot.columns]
+
+            # 3) Now show it in Streamlit
+            st.dataframe(df_counts_plot)
+
+            # st.dataframe(ss["counts"].loc[name], key=f"counts_df_{name}", width="stretch")

@@ -67,7 +67,7 @@ def page_1():
     template_df = _get_template_dataframe()
     action_cols = st.columns(2)
     with action_cols[0]:
-        if st.button("Upload CSV logs", type="primary", icon=":material/upload_file:", use_container_width=True):
+        if st.button("Upload CSV logs", type="primary", icon=":material/upload_file:", width="stretch"):
             ss["show_upload_modal"] = True
             st.rerun()
     with action_cols[1]:
@@ -77,14 +77,14 @@ def page_1():
             file_name="pycoustic-template.csv",
             mime="text/csv",
             icon=":material/download:",
-            use_container_width=True,
+            width="stretch",
             key="home_template_download",
         )
     cols = st.columns(1)
     with cols[0]:
         if st.button(
                 "Reset logs and temp files",
-                use_container_width=True,
+                width="stretch",
                 key="reset_logs_button",
                 help="Clears loaded logs, staged files, cached temp files, and analysis outputs.",
         ):

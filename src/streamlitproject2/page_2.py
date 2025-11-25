@@ -205,7 +205,6 @@ def page_2():
 
         with summary_tabs[3]:
             st.subheader("Modal and Value Counts")
-            st.text("Note: Ignore the 'Date' label.")
             modal_container = st.container()
 
             with modal_container:
