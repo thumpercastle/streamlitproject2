@@ -18,6 +18,8 @@ from st_config import (
     parse_times,
     default_times,
     _render_upload_modal_contents,
+    get_template_dataframe,
+    convert_for_download,
 )
 
 ss = init_app_state()
@@ -34,7 +36,60 @@ ss = init_app_state()
 
 def page_1():
     st.set_page_config(page_title="pycoustic GUI", layout="wide")
-    st.title("Data Loader")
+    # st.title("Data Loader")
+
+    st.title("Pycoustic Acoustic Survey Analyser")
+    st.markdown(
+        "> Upload CSV logs, adjust survey periods from the sidebar, then explore broadband insights and interactive graphs."
+    )
+
+    logs_loaded = len(ss["logs"])
+    last_upload = ss["last_upload_ts"]
+
+    stats_cols = st.columns(2)
+    stats_cols[0].metric("Loaded logs", logs_loaded)
+    stats_cols[1].metric(
+        "Last import",
+        last_upload.strftime("%Y-%m-%d %H:%M") if isinstance(last_upload, dt.datetime) else "—",
+    )
+
+    st.markdown("### Quick start")
+    quick_cols = st.columns(3)
+    with quick_cols[0]:
+        st.markdown("**1. Upload logs**<br/>Use the primary button below or drag CSV files directly into the modal.",
+                    unsafe_allow_html=True)
+    with quick_cols[1]:
+        st.markdown(
+            "**2. Review periods**<br/>Pick survey times from the sidebar so every page shares the same schedule.",
+            unsafe_allow_html=True)
+    with quick_cols[2]:
+        st.markdown(
+            "**3. Explore outputs**<br/>Head to Analysis & Visualisation or Interactive Graphs once logs are ready.",
+            unsafe_allow_html=True)
+
+    if logs_loaded:
+        st.success(f"{logs_loaded} log(s) ready for analysis. Jump to Analysis or Interactive Graphs when you’re set.")
+    else:
+        st.warning("No logs uploaded yet. Use the **Upload CSV logs** button below to get started.")
+
+    template_df = get_template_dataframe()
+    action_cols = st.columns(2)
+    with action_cols[0]:
+        if st.button("Upload CSV logs", type="primary", icon=":material/upload_file:", use_container_width=True):
+            ss["show_upload_modal"] = True
+            st.rerun()
+    with action_cols[1]:
+        st.download_button(
+            label="Download template CSV",
+            data=convert_for_download(template_df),
+            file_name="pycoustic-template.csv",
+            mime="text/csv",
+            icon=":material/download:",
+            use_container_width=True,
+            key="home_template_download",
+        )
+
+    st.divider()
 
     # Ensure modal state exists
     ss.setdefault("show_upload_modal", False)

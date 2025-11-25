@@ -21,6 +21,39 @@ TEMPLATE = "plotly"
 
 default_times = {"day": (7, 0), "evening": (23, 0), "night": (23, 0)}
 
+
+TEMPLATE_COLUMNS = [
+    "Time",
+    "Leq A",
+    "Lmax A",
+    "L90 A",
+    "Leq 63",
+    "Leq 125",
+    "Leq 250",
+    "Leq 500",
+    "Leq 1000",
+    "Leq 2000",
+    "Leq 4000",
+    "Leq 8000",
+    "Lmax 63",
+    "Lmax 125",
+    "Lmax 250",
+    "Lmax 500",
+    "Lmax 1000",
+    "Lmax 2000",
+    "Lmax 4000",
+    "Lmax 8000",
+    "L90 63",
+    "L90 125",
+    "L90 250",
+    "L90 500",
+    "L90 1000",
+    "L90 2000",
+    "L90 4000",
+    "L90 8000",
+]
+
+
 # Session state
 def init_app_state() -> st.session_state:
     ss = st.session_state
@@ -102,11 +135,6 @@ def _update_pending_uploads(queue: list[dict]) -> None:
     Store the pending upload queue in Streamlit session_state.
     """
     st.session_state["pending_uploads"] = queue
-
-
-# --- Helper: trigger a rerun; kept as a small wrapper ---
-def rerun_app() -> None:
-    st.rerun()
 
 
 def _render_upload_modal_contents() -> None:
@@ -201,7 +229,7 @@ def _render_upload_modal_contents() -> None:
     with close_col:
         if st.button("Close", use_container_width=True, key="modal_close_logs"):
             ss["show_upload_modal"] = False
-            rerun_app()
+            st.rerun()
 
     # When "Add" is clicked, convert staged uploads to pc.Log objects
     if add_clicked and queue:
@@ -253,6 +281,16 @@ def _render_upload_modal_contents() -> None:
             st.success(f"Added {added} log(s).")
             if not queue:
                 ss["show_upload_modal"] = False
-            rerun_app()
+            st.rerun()
 
 
+@st.cache_data
+def get_template_dataframe() -> pd.DataFrame:
+    """Return a template DataFrame for the CSV download."""
+    return pd.DataFrame(columns=TEMPLATE_COLUMNS)
+
+
+@st.cache_data
+def convert_for_download(df: pd.DataFrame) -> bytes:
+    """Convert a DataFrame to CSV bytes for download."""
+    return df.to_csv(index=False).encode("utf-8")
