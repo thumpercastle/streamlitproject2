@@ -275,14 +275,16 @@ def page_2():
 
                 st.divider()
 
-                st.markdown(f"## {name} L90 value counts")
-                fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
-                st.plotly_chart(fig, key=f"counts_bar_{name}", config={
-                    "y": "Occurrences",
-                    "x": "dB",
-                    "color": "Period",
-                    "theme": None
-                })  # TODO: These kwargs don't work.
+                # One tab per log - assumes the same layout in each
+                for idx, (name, log) in enumerate(log_items, start=0):
+                    st.markdown(f"## {name} L90 value counts")
+                    fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
+                    st.plotly_chart(fig, key=f"counts_bar_{name}", config={
+                        "y": "Occurrences",
+                        "x": "dB",
+                        "color": "Period",
+                        "theme": None
+                    })  # TODO: These kwargs don't work.
 
-                st.divider()
+                    st.divider()
                 # st.dataframe(count_graph, key="count_graph", width="stretch")
