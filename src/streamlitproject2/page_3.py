@@ -123,7 +123,12 @@ def vis_page():
 
             # 3) Now show it in Streamlit
             # TODO: Give user a choice between count plot types
-            fig = ss["counts"].loc[name].plot.bar()
+
+            ss["counts_facet_overlap"] = st.toggle("Overlapping", False, key=f"counts_overlap_{name}", on_change=st.rerun)
+            if ss["counts_facet_overlap"]:
+                fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
+            else:
+                fig = ss["counts"].loc[name].plot.bar()
             st.plotly_chart(fig, key=f"counts_bar_{name}", config={
                 "y": "Occurrences",
                 "x": "dB",
