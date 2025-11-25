@@ -63,7 +63,7 @@ def page_2():
     ss["analysis_selected_logs"] = selected_logs
 
     period_times = ss.get("period_times")
-    survey = _build_survey(times=period_times, log_names=selected_logs)
+    ss["survey"] = _build_survey(times=period_times, log_names=selected_logs)
 
     st.subheader("Summary datasets")
     # filters = ss.setdefault("overview_filters", {"lmax_period": "nights"})
@@ -90,7 +90,7 @@ def page_2():
     )
 
     log_items = list(ss.get("logs", {}).items())
-    st.header("Overview")
+
     if not log_items:
         st.info("No logs loaded yet.")
     else:
