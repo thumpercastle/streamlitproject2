@@ -100,7 +100,7 @@ def vis_page():
 
 
             st.subheader(f"{name} Counts", divider=True)
-            st.info(f"Values = {ss["modal_params"][0][0]}, {ss["modal_params"][0][1]},\n"
+            st.info(f"Values = {ss["modal_params"][0][0]} {ss["modal_params"][0][1]},\n"
                     f"Daytime T = {ss["modal_params"][1]},\n"
                     f"Evening T = {ss['modal_params'][2]},\n"
                     f"Night T = {ss['modal_params'][3]}")
@@ -122,13 +122,13 @@ def vis_page():
             df_counts_plot.columns = [str(c) for c in df_counts_plot.columns]
 
             # 3) Now show it in Streamlit
-            # TODO: Give user a choice between count plot types
+            # TODO: Avoid 'stacked' bar chart
 
-            ss["counts_facet_overlap"] = st.toggle("Overlapping", False, key=f"counts_overlap_{name}", on_change=st.rerun)
+            ss["counts_facet_overlap"] = st.toggle("Stacked", False, key=f"counts_overlap_{name}", on_change=st.rerun)
             if ss["counts_facet_overlap"]:
-                fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
-            else:
                 fig = ss["counts"].loc[name].plot.bar()
+            else:
+                fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
             st.plotly_chart(fig, key=f"counts_bar_{name}", config={
                 "y": "Occurrences",
                 "x": "dB",
