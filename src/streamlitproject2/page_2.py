@@ -70,7 +70,7 @@ def analysis_page():
                         df = ss["survey"].resi_summary()  # Always a DataFrame per your note
                         ss["resi_df"] = df
 
-                        st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                        # st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
                         # Show cached result on rerun
                         if not ss["resi_df"].empty:
                             st.dataframe(ss["resi_df"], key="resi_df", width="stretch")
@@ -96,7 +96,7 @@ def analysis_page():
                             df = ss["survey"].leq_spectra()  # Always a DataFrame per your note
                             ss["leq_df"] = df
 
-                            st.success(f"Leq spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                            # st.success(f"Leq spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
                             # Show cached result on rerun
                             if not ss["leq_df"].empty:
                                 st.dataframe(ss["leq_df"], key="leq_df", width="stretch")
@@ -150,7 +150,7 @@ def analysis_page():
                     try:
                         df = ss["survey"].lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
                         ss["lmax_df"] = df
-                        st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                        # st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
                         # Show cached result on rerun
                         # Notify user if evening period disabled
                         if per == "evenings" and ss["times"]["evening"] == ss["times"]["night"]:
