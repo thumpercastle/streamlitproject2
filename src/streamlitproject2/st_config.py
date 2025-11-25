@@ -89,7 +89,7 @@ def get_data():
 def convert_for_download(df):
     return df.to_csv(index=False).encode("utf-8")
 
-def _cleanup_tmp_files(paths: Iterable[str]) -> None:
+def _cleanup_tmp_files(paths) -> None:
     """Remove cached temp files guarding against missing files."""
     for path in paths:
         try:
