@@ -249,42 +249,60 @@ def page_2():
                         index=4
                     )
                     night_t = str(night_t) + "min"
-                if not bool(ss["logs"]):
-                    st.info("No logs loaded yet.")
-                else:
-                    try:
-                        df = ss["survey"].modal(
-                            cols=par_tup,
-                            by_date=False,
-                            day_t=day_t,
-                            evening_t=eve_t,
-                            night_t=night_t
-                        )  # Always a DataFrame per your note
-                        ss["modal_df"] = df
-                        st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-                        # Show cached result on rerun
-                        if not ss["modal_df"].empty:
-                            st.dataframe(ss["modal_df"], key="modal_df", width="stretch")
-                        else:
-                            st.info("Run modal() to see results here.")
-                    except Exception as e:
-                        st.error(f"Failed to compute modal: {e}")
+
+                try:
+                    df = ss["survey"].modal(
+                        cols=par_tup,
+                        by_date=False,
+                        day_t=day_t,
+                        evening_t=eve_t,
+                        night_t=night_t
+                    )  # Always a DataFrame per your note
+                    ss["modal_df"] = df
+                    st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                    # Show cached result on rerun
+                    if not ss["modal_df"].empty:
+                        st.dataframe(ss["modal_df"], key="modal_df", width="stretch")
+                    else:
+                        st.info("Run modal() to see results here.")
+                except Exception as e:
+                    st.error(f"Failed to compute modal: {e}")
+
+                try:
+                    df = ss["survey"].counts(
+                        cols=par_tup,
+                        day_t=day_t,
+                        evening_t=eve_t,
+                        night_t=night_t
+                    )
+                    ss["modal_df"] = df
+                    st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
+                    # Show cached result on rerun
+                    if not ss["modal_df"].empty:
+                        st.dataframe(ss["modal_df"], key="modal_df", width="stretch")
+                    else:
+                        st.info("Run modal() to see results here.")
+                except Exception as e:
+                    st.error(f"Failed to compute modal: {e}")
 
                 # st.markdown("Counts")
                 ss["counts"] = ss["survey"].counts()
 
                 st.divider()
 
-                # One tab per log - assumes the same layout in each
-                for idx, (name, log) in enumerate(log_items, start=0):
-                    st.markdown(f"## {name} L90 value counts")
-                    fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
-                    st.plotly_chart(fig, key=f"counts_bar_{name}", config={
-                        "y": "Occurrences",
-                        "x": "dB",
-                        "color": "Period",
-                        "theme": None
-                    })  # TODO: These kwargs don't work.
+
+
+
+                # # One tab per log - assumes the same layout in each
+                # for idx, (name, log) in enumerate(log_items, start=0):
+                #     st.markdown(f"## {name} L90 value counts")
+                #     fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
+                #     st.plotly_chart(fig, key=f"counts_bar_{name}", config={
+                #         "y": "Occurrences",
+                #         "x": "dB",
+                #         "color": "Period",
+                #         "theme": None
+                #     })  # TODO: These kwargs don't work.
 
                     st.divider()
                 # st.dataframe(count_graph, key="count_graph", width="stretch")
