@@ -73,6 +73,7 @@ def init_app_state() -> st.session_state:
     ss.setdefault("times", default_times)
     ss.setdefault("show_upload_modal", False)
     ss.setdefault("counts_facet_overlap", False)
+    ss.setdefault("modal_params", [("L90", "A"), "60min", "60min", "15min"])
     pd.options.plotting.backend = "plotly"
     return ss
 
