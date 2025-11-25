@@ -89,6 +89,14 @@ def page_1():
             use_container_width=True,
             key="home_template_download",
         )
+    with st.expander:
+        if st.button(
+                "Reset logs and temp files",
+                use_container_width=True,
+                key="reset_logs_button",
+                help="Clears loaded logs, staged files, cached temp files, and analysis outputs.",
+        ):
+            _reset_workspace()
 
     st.divider()
 
@@ -100,26 +108,26 @@ def page_1():
 
         @st.dialog("Data Loader", width="large")
         def data_loader_dialog():
-            col_add, col_reset = st.columns([1, 1])
+            col_add, col_reset = st.columns([1])
             with col_add:
                 st.subheader("1. Upload CSV logs")
                 _render_upload_modal_contents()
-
-            with col_reset:
-                st.subheader("2. Current Logs")
-                if ss["logs"]:
-                    st.write(f"{len(ss['logs'])} log(s) loaded:")
-                    st.write(list(ss["logs"].keys()))
-                else:
-                    st.info("No logs loaded yet.")
-                if st.button("Reset"):
-                    _cleanup_tmp_files(ss.get("tmp_paths", []))
-                    ss["tmp_paths"] = []
-                    ss["logs"] = {}
-                    ss["resi_df"] = pd.DataFrame()
-                    ss["pending_uploads"] = []
-                    ss["num_logs"] = 0
-                    st.rerun()
+            #
+            # with col_reset:
+            #     st.subheader("2. Current Logs")
+            #     if ss["logs"]:
+            #         st.write(f"{len(ss['logs'])} log(s) loaded:")
+            #         st.write(list(ss["logs"].keys()))
+            #     else:
+            #         st.info("No logs loaded yet.")
+            #     if st.button("Reset"):
+            #         _cleanup_tmp_files(ss.get("tmp_paths", []))
+            #         ss["tmp_paths"] = []
+            #         ss["logs"] = {}
+            #         ss["resi_df"] = pd.DataFrame()
+            #         ss["pending_uploads"] = []
+            #         ss["num_logs"] = 0
+            #         st.rerun()
 
         data_loader_dialog()
 
@@ -132,7 +140,6 @@ def page_1():
     survey.set_periods(times=default_times)
     ss["survey"] = survey
 
-    st.divider()
     st.markdown("# Survey Config")
     st.markdown("## Set Time Periods")
     day_col, eve_col, night_col = st.columns([1, 1, 1])
@@ -149,13 +156,7 @@ def page_1():
     survey.set_periods(times=times)
 
     with st.expander("Maintenance", expanded=True):
-        if st.button(
-                "Reset logs and temp files",
-                use_container_width=True,
-                key="reset_logs_button",
-                help="Clears loaded logs, staged files, cached temp files, and analysis outputs.",
-        ):
-            _reset_workspace()
+
         st.markdown(
             "- If you edit CSV cells and then delete rows, create a fresh copy before exporting to avoid parsing issues.\n"
             "- Evening periods are disabled when they match night start times; adjust above to restore evening summaries.\n"
@@ -170,35 +171,6 @@ def page_2():
     st.title("Survey Overview")
     # st.header("Overview")
     log_items = list(ss.get("logs", {}).items())
-    # if not log_items:
-    #     st.info("No logs loaded yet.")
-    # else:
-    #     # Compute and display resi_summary directly from current logs
-    #     st.subheader("Broadband Summary")
-    #     resi_container = st.container()
-    #
-    #     with resi_container:
-    #         if not bool(ss["logs"]):
-    #             st.info("No logs loaded yet.")
-    #         else:
-    #             try:
-    #                 df = ss["survey"].resi_summary()  # Always a DataFrame per your note
-    #                 ss["resi_df"] = df
-    #
-    #                 st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-    #                 # Show cached result on rerun
-    #                 if not ss["resi_df"].empty:
-    #                     st.dataframe(ss["resi_df"], key="resi_df", width="stretch")
-    #                 else:
-    #                     st.info("Run resi_summary() to see results here.")
-    #             except Exception as e:
-    #                 st.error(f"Failed to compute resi_summary: {e}")
-    #
-    #     st.divider()
-
-
-
-
     st.header("Overview")
     if not log_items:
         st.info("No logs loaded yet.")
@@ -381,6 +353,8 @@ def page_2():
 def page_3():
     st.title("Individual Logs")
     log_items = list(ss.get("logs", {}).items())
+    if not log_items:
+        st.info("No logs loaded yet.")
     tab_labels = [name for name, _ in log_items]
     tabs = st.tabs(tab_labels)
 
@@ -472,19 +446,6 @@ pg = st.navigation([
 # Sidebar menu
 with st.sidebar:
     st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
-    st.markdown("# Download Template CSV")
-    df = get_data()
-    csv = _convert_for_download(df)
-    st.download_button(
-        label="Download CSV",
-        data=csv,
-        file_name="pycoustic.csv",
-        mime="text/csv",
-        icon=":material/download:",
-    )
-    st.text(" ")
-    st.text(
-        "Known error: If you add data to your csv, and then delete some cells before uploading, the app may not like it. Fix: Once you have deleted the cells you need to, create a copy of your tab in Excel, and then delete the old tab. This makes a fresh CSV that the app can handle.")
 
 pg.run()
 
