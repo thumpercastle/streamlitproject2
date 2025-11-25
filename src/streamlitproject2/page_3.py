@@ -98,10 +98,11 @@ def vis_page():
             # TODO: Enable value counts for other parameters
             # TODO: Customise plots, amend axis labels
 
+
             st.subheader(f"{name} Counts", divider=True)
-            st.info(f"Values = {ss["modal_params"][0][0]} {ss["modal_params"][0][1]}\n"
-                    f"Daytime T = {ss["modal_params"][1]}\n"
-                    f"Evening T = {ss['modal_params'][2]}\n"
+            st.info(f"Values = {ss["modal_params"][0][0]}, {ss["modal_params"][0][1]},\n"
+                    f"Daytime T = {ss["modal_params"][1]},\n"
+                    f"Evening T = {ss['modal_params'][2]},\n"
                     f"Night T = {ss['modal_params'][3]}")
             st.warning("Change these settings on the 'Analysis' page, under the 'Modal and Counts' tab")
             counts_df = ss["survey"].counts()
@@ -121,7 +122,8 @@ def vis_page():
             df_counts_plot.columns = [str(c) for c in df_counts_plot.columns]
 
             # 3) Now show it in Streamlit
-            fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
+            # TODO: Give user a choice between count plot types
+            fig = ss["counts"].loc[name].plot.bar()
             st.plotly_chart(fig, key=f"counts_bar_{name}", config={
                 "y": "Occurrences",
                 "x": "dB",
