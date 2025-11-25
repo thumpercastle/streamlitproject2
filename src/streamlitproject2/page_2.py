@@ -1,26 +1,8 @@
-import os
-import tempfile
-import datetime as dt
 import streamlit as st
-import pycoustic as pc
-import pandas as pd
-from typing import Dict, Tuple
-import plotly.graph_objects as go
 
 
 from st_config import (
     init_app_state,
-    TEMPLATE,
-    COLOURS,
-    get_data,
-    _convert_for_download,
-    _cleanup_tmp_files,
-    parse_times,
-    default_times,
-    _render_upload_modal_contents,
-    _get_template_dataframe,
-    _convert_for_download,
-    _reset_workspace,
     _build_survey
 )
 
@@ -37,13 +19,6 @@ def page_2():
     if not logs_available:
         st.warning("No logs have been uploaded yet. Use the Home page to add data.", icon=":material/info:")
         st.stop()
-
-    logs_loaded = len(ss["logs"])
-    # resample_options = [1, 2, 5, 10, 15, 30, 60, 120]
-    # current_resample = ss.get("global_resample_period", 15)
-    # if current_resample not in resample_options:
-    #     current_resample = 15
-    # ss["global_resample_period"] = current_resample
 
     default_selection = ss.get("analysis_selected_logs") or logs_available
 
@@ -66,19 +41,6 @@ def page_2():
     ss["survey"] = _build_survey(times=period_times, log_names=selected_logs)
 
     st.subheader("Summary datasets")
-    # filters = ss.setdefault("overview_filters", {"lmax_period": "nights"})
-
-    # lmax_options = ["days", "evenings", "nights"]
-    # default_lmax = filters.get("lmax_period", "nights")
-    # if default_lmax not in lmax_options:
-    #     default_lmax = "nights"
-    # lmax_period = st.selectbox(
-    #     "Lmax period",
-    #     options=lmax_options,
-    #     index=lmax_options.index(default_lmax),
-    #     key="lmax_period_selector",
-    # )
-    # ss["overview_filters"]["lmax_period"] = lmax_period
 
     summary_tabs = st.tabs(
         [
@@ -249,6 +211,8 @@ def page_2():
                     )
                     night_t = str(night_t) + "min"
 
+                # Modal
+                st.markdown("###Modal")
                 try:
                     df = ss["survey"].modal(
                         cols=[par_tup],
@@ -267,6 +231,8 @@ def page_2():
                 except Exception as e:
                     st.error(f"Failed to compute modal: {e}")
 
+                # Value counts
+                st.markdown("###Counts")
                 try:
                     df = ss["survey"].counts(
                         cols=[par_tup],
@@ -274,34 +240,17 @@ def page_2():
                         evening_t=eve_t,
                         night_t=night_t
                     )
-                    ss["modal_df"] = df
+                    ss["counts"] = df
                     st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
                     # Show cached result on rerun
-                    if not ss["modal_df"].empty:
-                        st.dataframe(ss["modal_df"], key="modal_df", width="stretch")
+                    if not ss["counts"].empty:
+                        st.dataframe(ss["counts"], key="counts_df", width="stretch")
                     else:
                         st.info("Run modal() to see results here.")
                 except Exception as e:
                     st.error(f"Failed to compute modal: {e}")
 
-                # st.markdown("Counts")
-                ss["counts"] = ss["survey"].counts()
+
+                # ss["counts"] = ss["survey"].counts()
 
                 st.divider()
-
-
-
-
-                # # One tab per log - assumes the same layout in each
-                # for idx, (name, log) in enumerate(log_items, start=0):
-                #     st.markdown(f"## {name} L90 value counts")
-                #     fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
-                #     st.plotly_chart(fig, key=f"counts_bar_{name}", config={
-                #         "y": "Occurrences",
-                #         "x": "dB",
-                #         "color": "Period",
-                #         "theme": None
-                #     })  # TODO: These kwargs don't work.
-
-
-                # st.dataframe(count_graph, key="count_graph", width="stretch")
