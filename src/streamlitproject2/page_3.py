@@ -18,7 +18,7 @@ ss = init_app_state()
 
 
 def vis_page():
-    st.title("Visualisation")
+    st.header("Visualisation", divider=True)
 
     log_items = list(ss["logs"].items())
 
@@ -42,7 +42,7 @@ def vis_page():
             )
             period = str(period) + "min"
             graph_df = log.as_interval(t=period)
-            st.markdown(f"## {name} time history plot")
+            st.subheader(f"{name} time history plot")
             # TODO: Add option for user to choose which columns are required
             required_cols = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
             if set(map(tuple, required_cols)).issubset(set(graph_df.columns.to_flat_index())):
@@ -92,18 +92,18 @@ def vis_page():
             else:
                 st.warning(f"Required columns {required_cols} missing in {name}.")
 
-            st.markdown(f"## {name} resampled data")
+            st.subheader(f"{name} resampled data")
             st.dataframe(graph_df, key="master", width="stretch")
             st.divider()
             # TODO: Enable value counts for other parameters
             # TODO: Customise plots, amend axis labels
 
-            st.markdown(f"## {name} Counts")
-            st.text(f"Values = {ss["modal_params"][0][0]} {ss["modal_params"][0][1]}\n"
-                    f"Daytime T = {ss["modal_params"][1]}min\n"
-                    f"Evening T = {ss['modal_params'][2]}min\n"
-                    f"Night T = {ss['modal_params'][3]}min")
-            st.text("Change these settings on the 'Analysis' page, under the 'Modal and Counts' tab")
+            st.subheader(f"{name} Counts", divider=True)
+            st.info(f"Values = {ss["modal_params"][0][0]} {ss["modal_params"][0][1]}\n"
+                    f"Daytime T = {ss["modal_params"][1]}\n"
+                    f"Evening T = {ss['modal_params'][2]}\n"
+                    f"Night T = {ss['modal_params'][3]}")
+            st.warning("Change these settings on the 'Analysis' page, under the 'Modal and Counts' tab")
             counts_df = ss["survey"].counts()
 
             # Make a Streamlit‑friendly copy
