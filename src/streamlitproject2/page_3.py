@@ -88,7 +88,7 @@ def vis_page():
                     legend=dict(orientation="h", yanchor="top", y=-0.25, xanchor="left", x=0),
                     height=600,
                 )
-                st.plotly_chart(fig, width="stretch")
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning(f"Required columns {required_cols} missing in {name}.")
 
@@ -129,12 +129,14 @@ def vis_page():
                 fig = ss["counts"].loc[name].plot.bar()
             else:
                 fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
-            st.plotly_chart(fig, key=f"counts_bar_{name}", config={
-                "y": "Occurrences",
-                "x": "dB",
-                "color": "Period",
-                "theme": None
-            }) #TODO: These kwargs don't work.
+            st.plotly_chart(
+                fig,
+                key=f"counts_bar_{name}",
+                config={
+                    "displayModeBar": False,
+                    "responsive": True,
+                },
+            )
 
 
             # TODO: Enable value counts for other parameters

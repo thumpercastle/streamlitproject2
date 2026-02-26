@@ -1,5 +1,5 @@
 import streamlit as st
-
+from st_config import to_csv_preserve_multiheader
 
 from st_config import (
     init_app_state,
@@ -71,7 +71,7 @@ def analysis_page():
                 ss["lmax_n"] = st.number_input(
                     "Lmax n (nth-highest)",
                     min_value=1,
-                    max_value=60,
+                    max_value=20,
                     value=int(ss["lmax_n"]),
                     step=1,
                     key="bb_lmax_n",
@@ -94,7 +94,7 @@ def analysis_page():
                     try:
                         df = ss["survey"].broadband_summary(
                             lmax_n=int(ss["lmax_n"]),
-                            lmax_t=int(ss["lmax_t"]),
+                            lmax_t=f"{int(ss['lmax_t'])}min",
                         )
                         ss["broadband_df"] = df
 
@@ -104,6 +104,14 @@ def analysis_page():
                             st.info("Run broadband_summary() to see results here.")
                     except Exception as e:
                         st.error(f"Failed to compute broadband_summary: {e}")
+
+                st.download_button(
+                    "Download CSV (full headers)",
+                    data=to_csv_preserve_multiheader(ss["broadband_df"]),
+                    file_name="broadband_summary.csv",
+                    mime="text/csv",
+                    key="dl_broadband_csv",
+                )
 
             st.divider()
 
@@ -130,6 +138,13 @@ def analysis_page():
                                 st.info("Run leq_spectra() to see results here.")
                         except Exception as e:
                             st.error(f"Failed to compute leqspectra: {e}")
+                    st.download_button(
+                        "Download CSV (full headers)",
+                        data=to_csv_preserve_multiheader(ss["leq_df"]),
+                        file_name="leq.csv",
+                        mime="text/csv",
+                        key="dl_leq_csv",
+                    )
 
                 st.divider()
 
@@ -187,6 +202,14 @@ def analysis_page():
                             st.info("Run lmax_spectra() to see results here.")
                     except Exception as e:
                         st.error(f"Failed to compute lmax_spectra: {e}")
+                st.download_button(
+                    "Download CSV (full headers)",
+                    data=to_csv_preserve_multiheader(ss["lmax_df"]),
+                    file_name="lmax.csv",
+                    mime="text/csv",
+                    key="dl_lmax_csv",
+                )
+
 
             st.divider()
 
@@ -258,6 +281,14 @@ def analysis_page():
                 except Exception as e:
                     st.error(f"Failed to compute modal: {e}")
 
+                st.download_button(
+                    "Download CSV (full headers)",
+                    data=to_csv_preserve_multiheader(ss["modal_df"]),
+                    file_name="modal.csv",
+                    mime="text/csv",
+                    key="dl_modal_csv",
+                )
+
                 # Value counts
                 st.markdown("## Counts")
                 try:
@@ -279,5 +310,12 @@ def analysis_page():
 
 
                 # ss["counts"] = ss["survey"].counts()
+                st.download_button(
+                    "Download CSV (full headers)",
+                    data=to_csv_preserve_multiheader(ss["counts_df"]),
+                    file_name="counts.csv",
+                    mime="text/csv",
+                    key="dl_counts_csv",
+                )
 
                 st.divider()

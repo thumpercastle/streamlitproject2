@@ -89,6 +89,13 @@ def get_data():
     return df
 
 @st.cache_data
+def to_csv_preserve_multiheader(df: pd.DataFrame) -> bytes:
+    """
+    Export DataFrame to CSV preserving MultiIndex columns (i.e., multiple header rows).
+    """
+    return df.to_csv(index=True).encode("utf-8")
+
+@st.cache_data
 def convert_for_download(df):
     return df.to_csv(index=False).encode("utf-8")
 
