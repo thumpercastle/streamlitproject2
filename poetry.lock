@@ -641,6 +641,26 @@ test = ["hypothesis (>=6.46.1)", "pytest (>=7.3.2)", "pytest-xdist (>=2.2.0)"]
 xml = ["lxml (>=4.9.2)"]
 
 [[package]]
+name = "pgeocode"
+version = "0.5.0"
+description = "Postal code geocoding"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "pgeocode-0.5.0-py3-none-any.whl", hash = "sha256:de24a5997524ef557a29a1b22443cc1bf5d02c098e0c7a8dd9ea9caf01a6a72a"},
+    {file = "pgeocode-0.5.0.tar.gz", hash = "sha256:37d6caf74e9f2b1e69762811953df5b43fe7f1806833c83bf85a60dd784dff9e"},
+]
+
+[package.dependencies]
+numpy = "*"
+pandas = "*"
+requests = "*"
+
+[package.extras]
+fuzzy = ["thefuzz"]
+
+[[package]]
 name = "pillow"
 version = "11.3.0"
 description = "Python Imaging Library (Fork)"
@@ -846,20 +866,21 @@ test = ["cffi", "hypothesis", "pandas", "pytest", "pytz"]
 
 [[package]]
 name = "pycoustic"
-version = "0.1.18"
+version = "0.2.1"
 description = ""
 optional = false
 python-versions = "<=3.13,>=3.11"
 groups = ["main"]
 files = [
-    {file = "pycoustic-0.1.18-py3-none-any.whl", hash = "sha256:76694da871eaeae58509e1f820a062049d60ff7f1516a8c0f39f7137973e8701"},
-    {file = "pycoustic-0.1.18.tar.gz", hash = "sha256:9d87f33093d477d87f728b55e56e2351c1621268503e6d01ef6a7db33bad1c8d"},
+    {file = "pycoustic-0.2.1-py3-none-any.whl", hash = "sha256:9504f060808327dc0f021ad0e4dcbe5c3cfa5f7150d5a07218c733ef666f0972"},
+    {file = "pycoustic-0.2.1.tar.gz", hash = "sha256:33f6237cfdb5f1f664d352b66a659c8d39808a2d111c506b46a4b996d34028b0"},
 ]
 
 [package.dependencies]
 numpy = "2.3.3"
 openpyxl = "3.1.5"
 pandas = "2.3.3"
+pgeocode = "0.5.0"
 plotly = ">=6.3.1,<7.0.0"
 requests = ">=2.32.4,<3.0.0"
 streamlit = ">=1.46.1,<2.0.0"
@@ -1318,4 +1339,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<=3.13,>=3.11"
-content-hash = "5378a05b0e79237f94c0d88c9a812d11309f5743a3746a330cfe5574acbd4d28"
+content-hash = "bb77a994483155da4395fd2ca3eae72718d7821a2ab12db6e37b00a54a3ebfe9"
