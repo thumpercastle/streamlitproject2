@@ -166,7 +166,7 @@ def analysis_page():
                         label="nth-highest Lmax",
                         min_value=1,
                         max_value=60,
-                        value=10,
+                        value=ss["lmax_n"],
                         step=1,
                     )
                 with col_t:
@@ -174,7 +174,7 @@ def analysis_page():
                         label="Desired time-resolution of Lmax (min).",
                         min_value=1,
                         max_value=60,
-                        value=2,
+                        value=ss["lmax_t"],
                         step=1,
                     )
                     t_str = str(t_int) + "min"
@@ -312,7 +312,7 @@ def analysis_page():
                 # ss["counts"] = ss["survey"].counts()
                 st.download_button(
                     "Download CSV (full headers)",
-                    data=to_csv_preserve_multiheader(ss["counts_df"]),
+                    data=to_csv_preserve_multiheader(ss["counts"]),
                     file_name="counts.csv",
                     mime="text/csv",
                     key="dl_counts_csv",

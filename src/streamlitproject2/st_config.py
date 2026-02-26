@@ -367,3 +367,141 @@ def _build_survey(
         survey.set_periods(times=times)
     return survey
 
+def _fmt_time_value(v) -> str:
+    """
+    Make a friendly time string from either datetime.time or (hour, minute) tuple.
+    """
+    if isinstance(v, dt.time):
+        return v.strftime("%H:%M")
+    if isinstance(v, tuple) and len(v) == 2:
+        hh, mm = v
+        return f"{int(hh):02d}:{int(mm):02d}"
+    if v is None:
+        return "—"
+    return str(v)
+
+
+def _section_to_csv(
+        title: str,
+        params: list[tuple[str, str]],
+        df: pd.DataFrame | None,
+) -> str:
+    """
+    Render one CSV section:
+      - Title line
+      - Parameter block (key,value)
+      - DataFrame (preserving MultiIndex headers)
+    """
+    lines: list[str] = []
+    lines.append(f"# {title}")
+    if params:
+        lines.append("# Parameters")
+        for k, v in params:
+            # two-column "pretty" key/value rows
+            lines.append(f"{k},{v}")
+    else:
+        lines.append("# Parameters,None")
+
+    lines.append("")  # blank row before table
+
+    if df is None or getattr(df, "empty", True):
+        lines.append("# (no data)")
+        return "\n".join(lines)
+
+    # Preserve full headers (including MultiIndex -> multiple header rows)
+    table_csv = df.to_csv(index=True, lineterminator="\n")
+    lines.append(table_csv.rstrip("\n"))
+    return "\n".join(lines)
+
+
+@st.cache_data
+def build_combined_csv_with_sections(
+        broadband_df: pd.DataFrame | None,
+        leq_df: pd.DataFrame | None,
+        lmax_df: pd.DataFrame | None,
+        modal_df: pd.DataFrame | None,
+        counts_df: pd.DataFrame | None,
+        *,
+        day_start=None,
+        evening_start=None,
+        night_start=None,
+        lmax_n=None,
+        lmax_t=None,
+        modal_param=None,
+        day_t=None,
+        evening_t=None,
+        night_t=None,
+) -> bytes:
+    """
+    Build one CSV containing multiple tables separated by two blank rows.
+    Includes parameter blocks above relevant tables.
+    """
+    day_s = _fmt_time_value(day_start)
+    eve_s = _fmt_time_value(evening_start)
+    night_s = _fmt_time_value(night_start)
+
+    # Common period params shown where relevant
+    period_params = [
+        ("Day start", day_s),
+        ("Evening start", eve_s),
+        ("Night start", night_s),
+    ]
+
+    # Broadband/Lmax settings
+    lmax_params = [
+        ("Lmax n (nth-highest)", "—" if lmax_n is None else str(lmax_n)),
+        ("Lmax t (minutes)", "—" if lmax_t is None else str(lmax_t)),
+    ]
+
+    # Modal/counts settings
+    modal_params = [
+        ("Parameter", "—" if modal_param is None else str(modal_param)),
+        ("Daytime T", "—" if day_t is None else str(day_t)),
+        ("Evening T", "—" if evening_t is None else str(evening_t)),
+        ("Night T", "—" if night_t is None else str(night_t)),
+    ]
+
+    sections: list[str] = []
+
+    sections.append(
+        _section_to_csv(
+            "Broadband summary",
+            params=period_params + lmax_params,
+            df=broadband_df,
+        )
+    )
+
+    sections.append(
+        _section_to_csv(
+            "Leq spectra",
+            params=period_params,
+            df=leq_df,
+        )
+    )
+
+    sections.append(
+        _section_to_csv(
+            "Lmax spectra",
+            params=period_params,
+            df=lmax_df,
+        )
+    )
+
+    sections.append(
+        _section_to_csv(
+            "Modal",
+            params=period_params + modal_params,
+            df=modal_df,
+        )
+    )
+
+    sections.append(
+        _section_to_csv(
+            "Counts",
+            params=period_params + modal_params,
+            df=counts_df,
+        )
+    )
+
+    combined = ("\n\n\n").join(sections).strip() + "\n"  # 2 blank rows between sections
+    return combined.encode("utf-8")
