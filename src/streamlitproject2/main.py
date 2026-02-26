@@ -50,10 +50,7 @@ with st.sidebar:
     st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
 
     # Grey out until data exists (either logs loaded, or any output df non-empty)
-    any_data = bool(ss.get("logs")) and any(
-        not ss.get(k, pd.DataFrame()).empty
-        for k in ("broadband_df", "leq_df", "lmax_df", "modal_df", "counts")
-    )
+    any_data = bool(ss.get("logs"))
 
     # Pull parameters from session_state (use .get to avoid KeyError on first run)
     times = ss.get("times") or {}

@@ -62,9 +62,7 @@ def analysis_page():
             # Compute and display broadband_summary directly from current logs
             st.subheader("Broadband Summary")
 
-            # Widgets (show current ss values; fall back to defaults)
-            ss.setdefault("lmax_n", 10)
-            ss.setdefault("lmax_t", 2)
+
 
             w_cols = st.columns(2)
             with w_cols[0]:
@@ -86,8 +84,8 @@ def analysis_page():
                     key="bb_lmax_t",
                 )
 
-            resi_container = st.container()
-            with resi_container:
+            broadband_container = st.container()
+            with broadband_container:
                 if not bool(ss["logs"]):
                     st.info("No logs loaded yet.")
                 else:

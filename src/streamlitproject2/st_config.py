@@ -321,6 +321,8 @@ def _reset_workspace() -> None:
     ss["num_logs"] = 0
     ss["last_upload_ts"] = None
     ss["global_resample_period"] = 15
+    ss.setdefault("lmax_n", 10)
+    ss.setdefault("lmax_t", 2)
     st.rerun()
 
 
