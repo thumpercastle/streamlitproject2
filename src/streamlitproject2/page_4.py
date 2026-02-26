@@ -126,10 +126,39 @@ def weather_page():
     ss["weather_show_raw"] = bool(show_raw)
 
     if not submitted:
-        # If cached data exists, show it
+        # If cached data exists, show it (and re-render charts from cached df)
         if isinstance(ss.get("weather_df"), pd.DataFrame) and not ss["weather_df"].empty:
             st.subheader("Last fetched weather history")
             st.dataframe(ss["weather_df"], use_container_width=True)
+
+            # Re-render charts from cached data so they persist across page navigation
+            st.subheader("Quick charts")
+            chart_cols = st.columns(2)
+
+            df_cached = ss["weather_df"]
+            if "dt" in df_cached.columns:
+                plot_df = df_cached.copy()
+                plot_df["dt"] = pd.to_datetime(plot_df["dt"], errors="coerce")
+                plot_df = plot_df.dropna(subset=["dt"])
+
+                if "temp" in plot_df.columns:
+                    with chart_cols[0]:
+                        fig = px.line(plot_df, x="dt", y="temp", title="Temperature")
+                        st.plotly_chart(fig, use_container_width=True)
+                else:
+                    with chart_cols[0]:
+                        st.info("No `temp` column available to plot.")
+
+                wind_col = "wind_speed" if "wind_speed" in plot_df.columns else None
+                if wind_col:
+                    with chart_cols[1]:
+                        fig = px.line(plot_df, x="dt", y=wind_col, title="Wind speed")
+                        st.plotly_chart(fig, use_container_width=True)
+                else:
+                    with chart_cols[1]:
+                        st.info("No `wind_speed` column available to plot.")
+            else:
+                st.info("No `dt` column available for time-series plotting.")
         else:
             st.info("Enter details above and click **Fetch weather history**.")
         return
