@@ -61,7 +61,7 @@ def init_app_state() -> st.session_state:
     ss = st.session_state
     ss.setdefault("tmp_paths", [])
     ss.setdefault("logs", {})          # Dict[str, pc.Log]
-    ss.setdefault("resi_df", pd.DataFrame())
+    ss.setdefault("broadband_df", pd.DataFrame())
     ss.setdefault("leq_df", pd.DataFrame())
     ss.setdefault("lmax_df", pd.DataFrame())
     ss.setdefault("modal_df", pd.DataFrame())
@@ -304,7 +304,7 @@ def _reset_workspace() -> None:
     _cleanup_tmp_files(ss.get("tmp_paths", []))
     ss["tmp_paths"] = []
     ss["logs"] = {}
-    ss["resi_df"] = pd.DataFrame()
+    ss["broadband_df"] = pd.DataFrame()
     ss["leq_df"] = pd.DataFrame()
     ss["lmax_df"] = pd.DataFrame()
     ss["modal_df"] = pd.DataFrame()

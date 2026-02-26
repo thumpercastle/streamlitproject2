@@ -59,25 +59,51 @@ def analysis_page():
 
         # Broadband tab
         with summary_tabs[0]:
-            # Compute and display resi_summary directly from current logs
+            # Compute and display broadband_summary directly from current logs
             st.subheader("Broadband Summary")
+
+            # Widgets (show current ss values; fall back to defaults)
+            ss.setdefault("lmax_n", 10)
+            ss.setdefault("lmax_t", 2)
+
+            w_cols = st.columns(2)
+            with w_cols[0]:
+                ss["lmax_n"] = st.number_input(
+                    "Lmax n (nth-highest)",
+                    min_value=1,
+                    max_value=60,
+                    value=int(ss["lmax_n"]),
+                    step=1,
+                    key="bb_lmax_n",
+                )
+            with w_cols[1]:
+                ss["lmax_t"] = st.number_input(
+                    "Lmax t (minutes)",
+                    min_value=1,
+                    max_value=60,
+                    value=int(ss["lmax_t"]),
+                    step=1,
+                    key="bb_lmax_t",
+                )
+
             resi_container = st.container()
             with resi_container:
                 if not bool(ss["logs"]):
                     st.info("No logs loaded yet.")
                 else:
                     try:
-                        df = ss["survey"].resi_summary()  # Always a DataFrame per your note
-                        ss["resi_df"] = df
+                        df = ss["survey"].broadband_summary(
+                            lmax_n=int(ss["lmax_n"]),
+                            lmax_t=int(ss["lmax_t"]),
+                        )
+                        ss["broadband_df"] = df
 
-                        # st.success(f"resi_summary computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-                        # Show cached result on rerun
-                        if not ss["resi_df"].empty:
-                            st.dataframe(ss["resi_df"], key="resi_df", width="stretch")
+                        if not ss["broadband_df"].empty:
+                            st.dataframe(ss["broadband_df"], key="broadband_df", width="stretch")
                         else:
-                            st.info("Run resi_summary() to see results here.")
+                            st.info("Run broadband_summary() to see results here.")
                     except Exception as e:
-                        st.error(f"Failed to compute resi_summary: {e}")
+                        st.error(f"Failed to compute broadband_summary: {e}")
 
             st.divider()
 
@@ -108,7 +134,7 @@ def analysis_page():
                 st.divider()
 
 
-        # Compute and display resi_summary directly from current logs
+        # Compute and display broadband_summary directly from current logs
 
         with summary_tabs[2]:
             lmax_container = st.container()

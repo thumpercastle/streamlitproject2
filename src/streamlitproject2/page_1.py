@@ -114,7 +114,7 @@ def config_page():
 
     survey.set_periods(times=default_times)
     ss["survey"] = survey
-    ss["resi_df"] = survey.resi_summary()
+    ss["broadband_df"] = survey.broadband_summary()
     ss["leq_df"] = survey.leq_spectra()
     ss["lmax_df"] = survey.lmax_spectra()
     ss["modal_df"] = survey.modal()
