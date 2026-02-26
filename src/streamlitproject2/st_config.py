@@ -76,6 +76,10 @@ def init_app_state() -> st.session_state:
     ss.setdefault("show_upload_modal", False)
     ss.setdefault("counts_facet_overlap", False)
     ss.setdefault("modal_params", [("L90", "A"), "60min", "60min", "15min"])
+    ss.setdefault("weather_country_code", "GB")
+    ss.setdefault("weather_postcode", "WC1")
+    ss.setdefault("owm_api_key", "")
+    ss.setdefault("weather_df", pd.DataFrame())
     pd.options.plotting.backend = "plotly"
     return ss
 

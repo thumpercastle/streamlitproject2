@@ -27,6 +27,7 @@ from st_config import (
 from page_1 import config_page
 from page_2 import analysis_page
 from page_3 import vis_page
+from page_4 import weather_page
 
 ss = init_app_state()
 
@@ -36,10 +37,13 @@ ss = init_app_state()
 #TODO: Tidy buttons and info on graph page.
 
 
+from page_4 import weather_page
+
 pg = st.navigation([
     st.Page(config_page, title="Data Loader"),
     st.Page(analysis_page, title="Analysis"),
-    st.Page(vis_page, title="Visualisation")
+    st.Page(vis_page, title="Visualisation"),
+    st.Page(weather_page, title="Weather"),
 ])
 
 # Sidebar menu
