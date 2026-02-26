@@ -123,11 +123,23 @@ def config_page():
     st.markdown("## Set Time Periods")
     day_col, eve_col, night_col = st.columns([1, 1, 1])
     with day_col:
-        day_start = st.time_input("Daytime Start", dt.time(7, 00), on_change=st.rerun)
+        day_start = st.time_input(
+            "Daytime Start",
+            value=dt.time(*ss["times"]["day"]),
+            key="day_start",
+        )
     with eve_col:
-        evening_start = st.time_input("Evening Start*", dt.time(23, 00), on_change=st.rerun)
+        evening_start = st.time_input(
+            "Evening Start*",
+            value=dt.time(*ss["times"]["evening"]),
+            key="evening_start",
+        )
     with night_col:
-        night_start = st.time_input("Night-time Start**", dt.time(23, 00), on_change=st.rerun)
+        night_start = st.time_input(
+            "Night-time Start**",
+            value=dt.time(*ss["times"]["night"]),
+            key="night_start",
+        )
     st.text(
         "*If Evening starts at the same time as Night, Evening periods will be disabled (default). **Night-time must cross over midnight")
     times = parse_times(day_start, evening_start, night_start)
