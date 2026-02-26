@@ -323,8 +323,6 @@ def _reset_workspace() -> None:
     ss["global_resample_period"] = 15
     ss.setdefault("lmax_n", 10)
     ss.setdefault("lmax_t", 2)
-    ss["lmax_n"] = 10
-    ss["lmax_t"] = 2
     st.rerun()
 
 
@@ -417,6 +415,17 @@ def _section_to_csv(
     lines.append(table_csv.rstrip("\n"))
     return "\n".join(lines)
 
+def _fmt_int_value(v) -> str:
+    """
+    Return a clean integer string for CSV display.
+    Handles numpy integer scalars and other numeric types safely.
+    """
+    if v is None:
+        return "—"
+    try:
+        return str(int(v))
+    except (TypeError, ValueError):
+        return str(v)
 
 @st.cache_data
 def build_combined_csv_with_sections(
@@ -453,8 +462,8 @@ def build_combined_csv_with_sections(
 
     # Broadband/Lmax settings
     lmax_params = [
-        ("Lmax n (nth-highest)", "—" if lmax_n is None else str(lmax_n)),
-        ("Lmax t (minutes)", "—" if lmax_t is None else str(lmax_t)),
+        ("Lmax n (nth-highest)", _fmt_int_value(lmax_n)),
+        ("Lmax t (minutes)", _fmt_int_value(lmax_t)),
     ]
 
     # Modal/counts settings
