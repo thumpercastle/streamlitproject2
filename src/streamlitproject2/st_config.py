@@ -59,6 +59,8 @@ TEMPLATE_COLUMNS = [
 # Session state
 def init_app_state() -> st.session_state:
     ss = st.session_state
+    ss.setdefault("lmax_n", 10)
+    ss.setdefault("lmax_t", 2)
     ss.setdefault("tmp_paths", [])
     ss.setdefault("logs", {})          # Dict[str, pc.Log]
     ss.setdefault("broadband_df", pd.DataFrame())
