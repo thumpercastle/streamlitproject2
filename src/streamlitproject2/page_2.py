@@ -319,3 +319,4 @@ def analysis_page():
                 )
 
                 st.divider()
+
