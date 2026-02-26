@@ -323,6 +323,8 @@ def _reset_workspace() -> None:
     ss["global_resample_period"] = 15
     ss.setdefault("lmax_n", 10)
     ss.setdefault("lmax_t", 2)
+    ss["lmax_n"] = 10
+    ss["lmax_t"] = 2
     st.rerun()
 
 
