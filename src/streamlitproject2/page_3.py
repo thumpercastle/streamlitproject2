@@ -354,36 +354,40 @@ def vis_page() -> None:
             st.divider()
 
             st.subheader(f"{name} counts", divider=True)
-            st.info(
-                f"Values = {modal_param[0]} {modal_param[1]}, "
-                f"Daytime T = {day_t}, "
-                f"Evening T = {evening_t}, "
-                f"Night T = {night_t}"
-            )
-            st.caption("Change these settings on the Analysis page under the Modal and counts tab.")
 
-            try:
-                counts_df = ss["survey"].counts(
-                    cols=[modal_param],
-                    day_t=day_t,
-                    evening_t=evening_t,
-                    night_t=night_t,
-                )
-                ss["counts"] = counts_df
-            except Exception as exc:
-                st.error(f"Failed to compute counts for {name}: {exc}")
-                continue
+            counts_col_options = [
+                col for col in available_plot_cols
+                if col not in [("Night idx", ""), "Night idx"]
+            ]
 
-            log_counts = _counts_series_for_log(ss.get("counts"), name)
-            if log_counts.empty:
-                st.info("No counts data available for this log.")
+            if not counts_col_options:
+                st.info("No numeric columns available for counts distribution.")
             else:
-                counts_fig = _build_counts_figure(log_counts, title=f"{name} value counts")
-                st.plotly_chart(
-                    counts_fig,
-                    use_container_width=True,
-                    config={
-                        "displayModeBar": False,
-                        "responsive": True,
-                    },
+                default_counts_col = modal_param if modal_param in counts_col_options else counts_col_options[0]
+                counts_col = st.selectbox(
+                    "Column for counts distribution",
+                    options=counts_col_options,
+                    index=counts_col_options.index(default_counts_col),
+                    format_func=_normalise_plot_column_name,
+                    key=f"counts_col_{name}",
                 )
+
+                try:
+                    log_counts = log.counts(data=graph_df, cols=[counts_col])
+                except Exception as exc:
+                    st.error(f"Failed to compute counts for {name}: {exc}")
+                    log_counts = pd.Series(dtype="int64")
+
+                if log_counts.empty:
+                    st.info("No counts data available for this log.")
+                else:
+                    counts_label = _normalise_plot_column_name(counts_col)
+                    counts_fig = _build_counts_figure(log_counts, title=f"{name} — {counts_label} counts")
+                    st.plotly_chart(
+                        counts_fig,
+                        use_container_width=True,
+                        config={
+                            "displayModeBar": "hover",
+                            "responsive": True,
+                        },
+                    )
