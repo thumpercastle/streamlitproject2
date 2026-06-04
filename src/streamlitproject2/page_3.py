@@ -1,51 +1,107 @@
-import os
-import tempfile
-import datetime as dt
-import streamlit as st
-import pycoustic as pc
 import pandas as pd
-from typing import Dict, Tuple
 import plotly.graph_objects as go
+import streamlit as st
 
-
-from st_config import (
-    init_app_state,
-    TEMPLATE,
-    COLOURS,
-)
+from st_config import COLOURS, TEMPLATE, init_app_state
 
 ss = init_app_state()
 
 
-def vis_page():
+def _counts_series_for_log(counts_df, log_name: str) -> pd.Series:
+    if counts_df is None:
+        return pd.Series(dtype="float64")
+
+    if isinstance(counts_df, pd.Series):
+        if isinstance(counts_df.index, pd.MultiIndex):
+            try:
+                subset = counts_df.loc[log_name]
+                if isinstance(subset, pd.Series):
+                    return subset
+            except Exception:
+                return pd.Series(dtype="float64")
+        return counts_df
+
+    if isinstance(counts_df, pd.DataFrame):
+        try:
+            subset = counts_df.loc[log_name]
+            if isinstance(subset, pd.Series):
+                return subset
+            if isinstance(subset, pd.DataFrame) and subset.shape[1] >= 1:
+                return subset.iloc[:, 0]
+        except Exception:
+            return pd.Series(dtype="float64")
+
+    return pd.Series(dtype="float64")
+
+
+def _build_counts_figure(series: pd.Series, title: str) -> go.Figure:
+    plot_series = pd.to_numeric(series, errors="coerce").dropna()
+    if not plot_series.empty:
+        try:
+            sort_index = sorted(plot_series.index, key=lambda value: float(value))
+            plot_series = plot_series.reindex(sort_index)
+        except Exception:
+            pass
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=[str(x) for x in plot_series.index],
+            y=plot_series.values,
+            marker_color=COLOURS["Leq A"],
+            name="Count",
+        )
+    )
+    fig.update_layout(
+        template=TEMPLATE,
+        title=title,
+        xaxis_title="Value (dB)",
+        yaxis_title="Count",
+        margin=dict(l=0, r=0, t=48, b=0),
+        height=420,
+        showlegend=False,
+    )
+    return fig
+
+
+def vis_page() -> None:
     st.header("Visualisation", divider=True)
 
     log_items = list(ss["logs"].items())
-
     if not log_items:
-        st.warning("No logs have been uploaded yet. Use the Home page to add data.", icon=":material/info:")
+        st.warning("No logs have been uploaded yet. Use the Data Loader page to add data.")
         st.stop()
 
-    tab_labels = [name for name, _ in log_items]
-    tabs = st.tabs(tab_labels)
+    tabs = st.tabs([name for name, _ in log_items])
 
-    # Overview tab content
+    modal_params = ss.get("modal_params") or [("L90", "A"), "60min", "60min", "15min"]
+    modal_param = modal_params[0]
+    day_t = modal_params[1]
+    evening_t = modal_params[2]
+    night_t = modal_params[3]
 
-    # One tab per log - assumes the same layout in each
-    for idx, (name, log) in enumerate(log_items, start=0):
+    for idx, (name, log) in enumerate(log_items):
         with tabs[idx]:
-            period = st.selectbox(
-                label="Resample period (minutes). Must be >= survey measurement period.",
+            period_minutes = st.selectbox(
+                label="Resample period (minutes). Must be greater than or equal to the survey measurement period.",
                 options=[1, 2, 5, 10, 15, 30, 60, 120],
                 index=4,
-                key=f"period_{name}"
+                key=f"period_{name}",
             )
-            period = str(period) + "min"
-            graph_df = log.as_interval(t=period)
+            period = f"{period_minutes}min"
+
+            try:
+                graph_df = log.as_interval(t=period)
+            except Exception as exc:
+                st.error(f"Failed to resample data for {name}: {exc}")
+                continue
+
             st.subheader(f"{name} time history plot")
-            # TODO: Add option for user to choose which columns are required
-            required_cols = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
-            if set(map(tuple, required_cols)).issubset(set(graph_df.columns.to_flat_index())):
+
+            required_cols = [("Leq", "A"), ("L90", "A"), ("Lmax", "A")]
+            available_cols = set(graph_df.columns.to_flat_index()) if isinstance(graph_df.columns, pd.MultiIndex) else set(graph_df.columns)
+
+            if set(required_cols).issubset(available_cols):
                 fig = go.Figure()
                 fig.add_trace(
                     go.Scatter(
@@ -56,7 +112,6 @@ def vis_page():
                         line=dict(color=COLOURS["Leq A"], width=2),
                     )
                 )
-                #TODO: Use plotly config kwarg
                 fig.add_trace(
                     go.Scatter(
                         x=graph_df.index,
@@ -72,75 +127,68 @@ def vis_page():
                         y=graph_df[("Lmax", "A")],
                         name="Lmax A",
                         mode="markers",
-                        marker=dict(color=COLOURS["Lmax A"], size=3),
+                        marker=dict(color=COLOURS["Lmax A"], size=4),
                     )
                 )
                 fig.update_layout(
                     template=TEMPLATE,
                     margin=dict(l=0, r=0, t=0, b=0),
                     xaxis=dict(
-                        title="Time & Date (hh:mm & dd/mm/yyyy)",
+                        title="Time & Date",
                         type="date",
                         tickformat="%H:%M<br>%d/%m/%Y",
                         tickangle=0,
                     ),
                     yaxis_title="Measured Sound Pressure Level dB(A)",
-                    legend=dict(orientation="h", yanchor="top", y=-0.25, xanchor="left", x=0),
+                    legend=dict(
+                        orientation="h",
+                        yanchor="top",
+                        y=-0.2,
+                        xanchor="left",
+                        x=0,
+                    ),
                     height=600,
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.warning(f"Required columns {required_cols} missing in {name}.")
+                st.warning(f"Required columns {required_cols} are missing in {name}.")
 
             st.subheader(f"{name} resampled data")
-            st.dataframe(graph_df, key="master", width="stretch")
+            st.dataframe(graph_df, use_container_width=True)
+
             st.divider()
-            # TODO: Enable value counts for other parameters
-            # TODO: Customise plots, amend axis labels
 
-
-            st.subheader(f"{name} Counts", divider=True)
-            st.info(f"Values = {ss["modal_params"][0][0]} {ss["modal_params"][0][1]},\n"
-                    f"Daytime T = {ss["modal_params"][1]},\n"
-                    f"Evening T = {ss['modal_params'][2]},\n"
-                    f"Night T = {ss['modal_params'][3]}")
-            st.warning("Change these settings on the 'Analysis' page, under the 'Modal and Counts' tab")
-            counts_df = ss["survey"].counts()
-
-            # Make a Streamlit‑friendly copy
-            df_counts_plot = counts_df.copy()
-
-            # 1) If columns are a MultiIndex, flatten them
-            if isinstance(df_counts_plot.columns, pd.MultiIndex):
-                flat_cols = []
-                for tpl in df_counts_plot.columns:
-                    # tpl may have length 1, 2, or more – join all levels into a string
-                    flat_cols.append(" ".join(str(x) for x in tpl if x is not None))
-                df_counts_plot.columns = flat_cols
-
-            # 2) Ensure all column names are strings (handles any leftover non‑str labels)
-            df_counts_plot.columns = [str(c) for c in df_counts_plot.columns]
-
-            # 3) Now show it in Streamlit
-            # TODO: Avoid 'stacked' bar chart
-
-            ss["counts_facet_overlap"] = st.toggle("Stacked", False, key=f"counts_overlap_{name}")
-            if ss["counts_facet_overlap"]:
-                fig = ss["counts"].loc[name].plot.bar()
-            else:
-                fig = ss["counts"].loc[name].plot.bar(facet_row="variable")
-            st.plotly_chart(
-                fig,
-                key=f"counts_bar_{name}",
-                config={
-                    "displayModeBar": False,
-                    "responsive": True,
-                },
+            st.subheader(f"{name} counts", divider=True)
+            st.info(
+                f"Values = {modal_param[0]} {modal_param[1]}, "
+                f"Daytime T = {day_t}, "
+                f"Evening T = {evening_t}, "
+                f"Night T = {night_t}"
             )
+            st.caption("Change these settings on the Analysis page under the Modal and counts tab.")
 
+            try:
+                counts_df = ss["survey"].counts(
+                    cols=[modal_param],
+                    day_t=day_t,
+                    evening_t=evening_t,
+                    night_t=night_t,
+                )
+                ss["counts"] = counts_df
+            except Exception as exc:
+                st.error(f"Failed to compute counts for {name}: {exc}")
+                continue
 
-            # TODO: Enable value counts for other parameters
-            # st.dataframe(ss["counts"].loc[name], key=f"counts_df_{name}", width="stretch")
-
-
-            # st.dataframe(ss["counts"].loc[name], key=f"counts_df_{name}", width="stretch")
+            log_counts = _counts_series_for_log(ss.get("counts"), name)
+            if log_counts.empty:
+                st.info("No counts data available for this log.")
+            else:
+                counts_fig = _build_counts_figure(log_counts, title=f"{name} value counts")
+                st.plotly_chart(
+                    counts_fig,
+                    use_container_width=True,
+                    config={
+                        "displayModeBar": False,
+                        "responsive": True,
+                    },
+                )

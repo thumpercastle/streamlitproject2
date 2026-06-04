@@ -1,29 +1,6 @@
-import os
-import tempfile
-import datetime as dt
 import streamlit as st
-import pycoustic as pc
-import pandas as pd
-from typing import Dict, Tuple
-from st_config import build_combined_csv_with_sections
-import plotly.graph_objects as go
 
-
-from st_config import (
-    init_app_state,
-    TEMPLATE,
-    COLOURS,
-    get_data,
-    _convert_for_download,
-    _cleanup_tmp_files,
-    parse_times,
-    default_times,
-    _render_upload_modal_contents,
-    _get_template_dataframe,
-    _convert_for_download,
-    _reset_workspace
-)
-
+from st_config import build_combined_csv_with_sections, init_app_state
 from page_1 import config_page
 from page_2 import analysis_page
 from page_3 import vis_page
@@ -31,34 +8,27 @@ from page_4 import weather_page
 
 ss = init_app_state()
 
+st.set_page_config(page_title="Pycoustic Acoustic Survey Analyser", layout="wide")
 
-#TODO: Add modal and counts bar chart
-#TODO: Add titles to graphs
-#TODO: Tidy buttons and info on graph page.
+pg = st.navigation(
+    [
+        st.Page(config_page, title="Data Loader"),
+        st.Page(analysis_page, title="Analysis"),
+        st.Page(vis_page, title="Visualisation"),
+        st.Page(weather_page, title="Weather"),
+    ]
+)
 
-
-from page_4 import weather_page
-
-pg = st.navigation([
-    st.Page(config_page, title="Data Loader"),
-    st.Page(analysis_page, title="Analysis"),
-    st.Page(vis_page, title="Visualisation"),
-    st.Page(weather_page, title="Weather"),
-])
-
-# Sidebar menu
-from st_config import build_combined_csv_with_sections
-
-# Sidebar menu
 with st.sidebar:
-    st.text("This tool is a work in progress and may produce errors. Check results manually. Use at your own risk.")
+    st.caption(
+        "This tool is a work in progress and may produce errors. "
+        "Check results manually and use with care."
+    )
 
-    # Grey out until data exists (either logs loaded, or any output df non-empty)
     any_data = bool(ss.get("logs"))
 
-    # Pull parameters from session_state (use .get to avoid KeyError on first run)
     times = ss.get("times") or {}
-    modal_params = ss.get("modal_params") or [None, None, None, None]
+    modal_params = ss.get("modal_params") or [("L90", "A"), "60min", "60min", "15min"]
 
     csv_bytes = build_combined_csv_with_sections(
         ss.get("broadband_df"),
@@ -85,8 +55,10 @@ with st.sidebar:
         key="dl_all_tables_csv",
         disabled=not any_data,
         use_container_width=True,
-        help="Exports all summary tables into one CSV file with section headers and full (multi-row) column headers.",
+        help=(
+            "Exports all summary tables into one CSV file with section headers "
+            "and full multi-row column headers where applicable."
+        ),
     )
 
 pg.run()
-

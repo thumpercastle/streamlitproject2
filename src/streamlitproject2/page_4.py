@@ -1,241 +1,242 @@
-import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
 
-from st_config import init_app_state
-from st_config import _build_survey
+from st_config import TEMPLATE, _build_survey, init_app_state
 
 ss = init_app_state()
 
 
-def weather_page():
-    st.header("Weather history", divider=True)
+def _safe_get_survey_time_bounds(selected_logs: list[str]) -> tuple[object, object]:
+    logs = ss.get("logs", {})
+    starts = []
+    ends = []
+
+    for name in selected_logs:
+        log = logs.get(name)
+        if log is None:
+            continue
+
+        try:
+            starts.append(log.get_start())
+        except Exception:
+            pass
+
+        try:
+            ends.append(log.get_end())
+        except Exception:
+            pass
+
+    start = min(starts) if starts else None
+    end = max(ends) if ends else None
+    return start, end
+
+
+def _get_weather_source(survey):
+    weather_obj = getattr(survey, "_weather", None)
+    if weather_obj is None:
+        raise RuntimeError("Weather service is not available on the current survey object.")
+    return weather_obj
+
+
+def _prepare_weather_dataframe(df: pd.DataFrame | None) -> pd.DataFrame:
+    if df is None:
+        return pd.DataFrame()
+
+    prepared = df.copy()
+
+    if "dt" in prepared.columns:
+        prepared["dt"] = pd.to_datetime(prepared["dt"], errors="coerce")
+
+    numeric_candidates = [
+        "temp",
+        "feels_like",
+        "dew_point",
+        "pressure",
+        "humidity",
+        "wind_speed",
+        "wind_deg",
+        "wind_gust",
+        "clouds",
+        "visibility",
+        "rain",
+        "snow",
+    ]
+    for col in numeric_candidates:
+        if col in prepared.columns:
+            prepared[col] = pd.to_numeric(prepared[col], errors="coerce")
+
+    return prepared
+
+
+def _line_chart(df: pd.DataFrame, x_col: str, y_cols: list[str], title: str) -> go.Figure:
+    fig = go.Figure()
+
+    for col in y_cols:
+        if col in df.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=df[x_col],
+                    y=df[col],
+                    mode="lines+markers",
+                    name=col,
+                )
+            )
+
+    fig.update_layout(
+        template=TEMPLATE,
+        title=title,
+        margin=dict(l=0, r=0, t=48, b=0),
+        height=420,
+        xaxis_title="Time",
+        yaxis_title="Value",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+    return fig
+
+
+def weather_page() -> None:
+    st.title("Weather")
     st.markdown(
-        "Fetch historic weather snapshots using the survey’s overall time range "
-        "(earliest log start → latest log end) via OpenWeather One Call 3.0 Time Machine."
+        "> Fetch weather history covering the selected survey period and compare it with your uploaded acoustic logs."
     )
 
-    # Need logs and a survey that contains those logs
-    if not ss.get("logs"):
-        st.warning("No logs uploaded yet. Upload logs first to define the survey start/end.", icon=":material/info:")
+    logs_available = list(ss["logs"].keys())
+    if not logs_available:
+        st.warning("No logs have been uploaded yet. Use the Data Loader page to add data.")
         st.stop()
 
-    # replace the "Survey is not ready" guard with:
-    period_times = ss.get("period_times") or ss.get("times")
-    ss["survey"] = _build_survey(times=period_times)
-    survey = ss["survey"]
+    selected_logs = ss.get("analysis_selected_logs") or logs_available
+    if not selected_logs:
+        selected_logs = logs_available
 
-    # Session defaults (local, so you don't have to change init_app_state if you don't want to)
-    ss.setdefault("weather_country", "GB")
-    ss.setdefault("weather_postcode", "")
-    ss.setdefault("weather_units", "metric")
-    ss.setdefault("weather_interval_hours", 12)
-    ss.setdefault("weather_timeout_s", 30)
-    ss.setdefault("owm_api_key", "")
-    ss.setdefault("weather_df", pd.DataFrame())
-    ss.setdefault("weather_show_raw", False)
+    st.caption(f"Using {len(selected_logs)} selected log(s) for weather time bounds.")
 
-    with st.form("weather_form", border=True):
-        c1, c2, c3 = st.columns([1, 2, 2])
-
+    with st.form("weather_controls"):
+        c1, c2 = st.columns(2)
         with c1:
             country = st.text_input(
                 "Country code",
-                value=ss["weather_country"],
-                help='Two-letter ISO country code, e.g. "GB", "FR".',
-                max_chars=2,
+                value=ss.get("weather_country", "GB"),
+                help="Example: GB",
             ).strip().upper()
-
         with c2:
             postcode = st.text_input(
-                "Postcode",
-                value=ss["weather_postcode"],
-                help="Postal code used to resolve lat/lon.",
+                "Postcode / ZIP",
+                value=ss.get("weather_postcode", ""),
+                help="Example: WC1",
             ).strip()
 
+        c3, c4 = st.columns(2)
         with c3:
-            api_key = st.text_input(
-                "OpenWeatherMap API key",
-                value=ss["owm_api_key"],
-                type="password",
-                help="Kept in session state for this app session only.",
-            ).strip()
-
-        adv1, adv2, adv3, adv4 = st.columns([1, 1, 1, 1])
-        with adv1:
-            interval_hours = st.number_input(
-                "Interval (hours)",
-                min_value=1,
-                max_value=48,
-                step=1,
-                value=int(ss["weather_interval_hours"]),
-                help="How often to fetch a snapshot between survey start/end.",
-            )
-        with adv2:
             units = st.selectbox(
                 "Units",
                 options=["metric", "imperial", "standard"],
-                index=["metric", "imperial", "standard"].index(ss["weather_units"]),
+                index=["metric", "imperial", "standard"].index(ss.get("weather_units", "metric")),
             )
-        with adv3:
-            timeout_s = st.number_input(
-                "Timeout (s)",
-                min_value=5,
-                max_value=120,
-                step=5,
-                value=int(ss["weather_timeout_s"]),
-            )
-        with adv4:
-            recompute = st.toggle(
-                "Recompute",
-                value=False,
-                help="If on, forces a fresh fetch even if cached.",
+        with c4:
+            interval_hours = st.selectbox(
+                "History interval (hours)",
+                options=[1, 2, 3, 6, 12, 24],
+                index=[1, 2, 3, 6, 12, 24].index(ss.get("weather_interval_hours", 12)),
             )
 
-        drop_default = ["sunrise", "sunset", "feels_like", "dew_point", "visibility"]
-        drop_cols = st.multiselect(
-            "Drop columns",
-            options=[
-                "sunrise",
-                "sunset",
-                "feels_like",
-                "dew_point",
-                "visibility",
-                # allow users to drop additional common fields if they exist
-                "pressure",
-                "humidity",
-                "clouds",
-                "uvi",
-                "wind_gust",
-            ],
-            default=[c for c in drop_default],
-            help="Columns to remove from the returned table (only dropped if present).",
-        )
+        api_key = st.text_input(
+            "OpenWeather API key",
+            value=ss.get("owm_api_key", ""),
+            type="password",
+            help="Enter your API key to fetch historical weather data.",
+        ).strip()
 
-        show_raw = st.checkbox("Show raw response count", value=bool(ss["weather_show_raw"]))
+        fetch_clicked = st.form_submit_button("Fetch weather history", use_container_width=True)
 
-        submitted = st.form_submit_button("Fetch weather history", use_container_width=True)
-
-    # Persist inputs
     ss["weather_country"] = country
     ss["weather_postcode"] = postcode
-    ss["owm_api_key"] = api_key
     ss["weather_units"] = units
-    ss["weather_interval_hours"] = int(interval_hours)
-    ss["weather_timeout_s"] = int(timeout_s)
-    ss["weather_show_raw"] = bool(show_raw)
+    ss["weather_interval_hours"] = interval_hours
+    ss["owm_api_key"] = api_key
 
-    if not submitted:
-        # If cached data exists, show it (and re-render charts from cached df)
-        if isinstance(ss.get("weather_df"), pd.DataFrame) and not ss["weather_df"].empty:
-            st.subheader("Last fetched weather history")
-            st.dataframe(ss["weather_df"], use_container_width=True)
+    start, end = _safe_get_survey_time_bounds(selected_logs)
 
-            # Re-render charts from cached data so they persist across page navigation
-            st.subheader("Quick charts")
-            chart_cols = st.columns(2)
+    info_cols = st.columns(2)
+    info_cols[0].metric("Survey start", str(start) if start is not None else "—")
+    info_cols[1].metric("Survey end", str(end) if end is not None else "—")
 
-            df_cached = ss["weather_df"]
-            if "dt" in df_cached.columns:
-                plot_df = df_cached.copy()
-                plot_df["dt"] = pd.to_datetime(plot_df["dt"], errors="coerce")
-                plot_df = plot_df.dropna(subset=["dt"])
+    if fetch_clicked:
+        if not api_key:
+            st.error("Enter an API key before fetching weather history.")
+            st.stop()
 
-                if "temp" in plot_df.columns:
-                    with chart_cols[0]:
-                        fig = px.line(plot_df, x="dt", y="temp", title="Temperature")
-                        st.plotly_chart(fig, use_container_width=True)
-                else:
-                    with chart_cols[0]:
-                        st.info("No `temp` column available to plot.")
+        if not postcode:
+            st.error("Enter a postcode or ZIP code before fetching weather history.")
+            st.stop()
 
-                wind_col = "wind_speed" if "wind_speed" in plot_df.columns else None
-                if wind_col:
-                    with chart_cols[1]:
-                        fig = px.line(plot_df, x="dt", y=wind_col, title="Wind speed")
-                        st.plotly_chart(fig, use_container_width=True)
-                else:
-                    with chart_cols[1]:
-                        st.info("No `wind_speed` column available to plot.")
-            else:
-                st.info("No `dt` column available for time-series plotting.")
-        else:
-            st.info("Enter details above and click **Fetch weather history**.")
-        return
+        if start is None or end is None:
+            st.error("Could not determine survey time bounds from the selected logs.")
+            st.stop()
 
-    # Validate inputs
-    if len(country) != 2:
-        st.error("Country code must be 2 letters (e.g. GB).")
-        return
-    if not postcode:
-        st.error("Please enter a postcode.")
-        return
-    if not api_key:
-        st.error("Please enter an OpenWeatherMap API key.")
-        return
+        survey = _build_survey(times=ss.get("times"), log_names=selected_logs)
+        ss["survey"] = survey
 
-    # Compute
-    with st.spinner("Fetching weather history from OpenWeather…"):
         try:
-            # Configure (explicitly) so user settings are applied even if previously configured
-            survey.weather_config(
-                interval_hours=int(interval_hours),
+            weather_obj = _get_weather_source(survey)
+            weather_obj.reinit(
+                start=start,
+                end=end,
+                interval=int(interval_hours),
                 api_key=api_key,
                 country=country,
                 postcode=postcode,
+                tz=country,
                 units=units,
-                recompute=recompute,
             )
-            df = survey.weather_compute(
-                drop_cols=list(drop_cols) if drop_cols else None,
-                recompute=recompute,
-                timeout_s=int(timeout_s),
-            )
-        except Exception as e:
-            st.error(f"Failed to fetch weather history: {e}")
-            return
+            weather_df = weather_obj.compute_weather_history(drop_cols=[])
+            weather_df = _prepare_weather_dataframe(weather_df)
+            ss["weather_df"] = weather_df
+            st.success("Weather history loaded.")
+        except Exception as exc:
+            ss["weather_df"] = pd.DataFrame()
+            st.error(f"Failed to fetch weather history: {exc}")
 
-    if df is None or df.empty:
-        st.warning("No weather data returned.")
-        ss["weather_df"] = pd.DataFrame()
-        return
-
-    ss["weather_df"] = df
+    weather_df = ss.get("weather_df")
+    if weather_df is None or weather_df.empty:
+        st.info("No weather data loaded yet.")
+        st.stop()
 
     st.subheader("Weather history")
-    st.dataframe(df, use_container_width=True)
 
-    if show_raw:
-        try:
-            raw = survey.get_weather_raw()
-            st.caption(f"Raw payloads cached: {0 if raw is None else len(raw)}")
-        except Exception:
-            st.caption("Raw payloads unavailable.")
+    if "dt" in weather_df.columns:
+        temp_cols = [col for col in ["temp", "feels_like", "dew_point"] if col in weather_df.columns]
+        wind_cols = [col for col in ["wind_speed", "wind_gust"] if col in weather_df.columns]
+        sky_cols = [col for col in ["humidity", "clouds", "pressure"] if col in weather_df.columns]
 
-    # Quick plots (only if the columns exist)
-    st.subheader("Quick charts")
-    chart_cols = st.columns(2)
+        if temp_cols:
+            st.plotly_chart(
+                _line_chart(weather_df, "dt", temp_cols, "Temperature"),
+                use_container_width=True,
+            )
 
-    if "dt" in df.columns:
-        plot_df = df.copy()
-        plot_df["dt"] = pd.to_datetime(plot_df["dt"], errors="coerce")
-        plot_df = plot_df.dropna(subset=["dt"])
+        chart_cols = st.columns(2)
+        with chart_cols[0]:
+            if wind_cols:
+                st.plotly_chart(
+                    _line_chart(weather_df, "dt", wind_cols, "Wind"),
+                    use_container_width=True,
+                )
+        with chart_cols[1]:
+            if sky_cols:
+                st.plotly_chart(
+                    _line_chart(weather_df, "dt", sky_cols, "Humidity / Cloud / Pressure"),
+                    use_container_width=True,
+                )
 
-        if "temp" in plot_df.columns:
-            with chart_cols[0]:
-                fig = px.line(plot_df, x="dt", y="temp", title="Temperature")
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            with chart_cols[0]:
-                st.info("No `temp` column available to plot.")
+    st.dataframe(weather_df, use_container_width=True)
 
-        wind_col = "wind_speed" if "wind_speed" in plot_df.columns else None
-        if wind_col:
-            with chart_cols[1]:
-                fig = px.line(plot_df, x="dt", y=wind_col, title="Wind speed")
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            with chart_cols[1]:
-                st.info("No `wind_speed` column available to plot.")
-    else:
-        st.info("No `dt` column available for time-series plotting.")
+    ss["weather_show_raw"] = st.toggle(
+        "Show raw weather object output table",
+        value=ss.get("weather_show_raw", False),
+    )
+
+    if ss["weather_show_raw"]:
+        st.markdown("### Raw weather data")
+        st.dataframe(weather_df, use_container_width=True)

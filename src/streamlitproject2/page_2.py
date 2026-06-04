@@ -1,23 +1,19 @@
 import streamlit as st
-from st_config import to_csv_preserve_multiheader
 
-from st_config import (
-    init_app_state,
-    _build_survey
-)
+from st_config import _build_survey, init_app_state, to_csv_preserve_multiheader
 
 ss = init_app_state()
 
-def analysis_page():
+
+def analysis_page() -> None:
     st.title("Analysis")
     st.markdown(
         "> Explore broadband summaries, spectra, modal values, and download-ready datasets derived from your uploaded logs."
     )
 
     logs_available = list(ss["logs"].keys())
-
     if not logs_available:
-        st.warning("No logs have been uploaded yet. Use the Home page to add data.", icon=":material/info:")
+        st.warning("No logs have been uploaded yet. Use the Data Loader page to add data.")
         st.stop()
 
     default_selection = ss.get("analysis_selected_logs") or logs_available
@@ -27,18 +23,18 @@ def analysis_page():
         options=logs_available,
         default=default_selection,
         key="analysis_log_filter",
-        help="Results update immediately when you add or remove logs.",
-        on_change=st.rerun
+        help="Results update when you add or remove logs.",
     )
 
     if not selected_logs:
-        st.warning("Select at least one log to display analysis outputs.", icon=":material/select_all:")
+        st.warning("Select at least one log to display analysis outputs.")
         st.stop()
 
     ss["analysis_selected_logs"] = selected_logs
 
-    period_times = ss.get("period_times")
-    ss["survey"] = _build_survey(times=period_times, log_names=selected_logs)
+    period_times = ss.get("times")
+    survey = _build_survey(times=period_times, log_names=selected_logs)
+    ss["survey"] = survey
 
     st.subheader("Summary datasets")
 
@@ -51,270 +47,206 @@ def analysis_page():
         ]
     )
 
-    log_items = list(ss.get("logs", {}).items())
+    with summary_tabs[0]:
+        st.subheader("Broadband Summary")
 
-    if not log_items:
-        st.info("No logs loaded yet.")
-    else:
+        c1, c2 = st.columns(2)
+        with c1:
+            ss["lmax_n"] = st.number_input(
+                "Lmax n (nth-highest)",
+                min_value=1,
+                max_value=20,
+                value=int(ss["lmax_n"]),
+                step=1,
+                key="bb_lmax_n",
+            )
+        with c2:
+            ss["lmax_t"] = st.number_input(
+                "Lmax t (minutes)",
+                min_value=1,
+                max_value=60,
+                value=int(ss["lmax_t"]),
+                step=1,
+                key="bb_lmax_t",
+            )
 
-        # Broadband tab
-        with summary_tabs[0]:
-            # Compute and display broadband_summary directly from current logs
-            st.subheader("Broadband Summary")
+        try:
+            df = survey.broadband_summary(
+                lmax_n=int(ss["lmax_n"]),
+                lmax_t=f"{int(ss['lmax_t'])}min",
+            )
+            ss["broadband_df"] = df
+            if df is not None and not df.empty:
+                st.dataframe(df, use_container_width=True)
+            else:
+                st.info("No broadband summary data available for the selected logs.")
+        except Exception as exc:
+            st.error(f"Failed to compute broadband summary: {exc}")
+            ss["broadband_df"] = None
 
+        st.download_button(
+            "Download CSV (full headers)",
+            data=to_csv_preserve_multiheader(ss.get("broadband_df")),
+            file_name="broadband_summary.csv",
+            mime="text/csv",
+            key="dl_broadband_csv",
+        )
 
+    with summary_tabs[1]:
+        st.subheader("Leq Spectra")
+        st.caption(
+            "This computes the combined Leq for each period over the whole survey, rather than separate values by date."
+        )
 
-            w_cols = st.columns(2)
-            with w_cols[0]:
-                ss["lmax_n"] = st.number_input(
-                    "Lmax n (nth-highest)",
-                    min_value=1,
-                    max_value=20,
-                    value=int(ss["lmax_n"]),
-                    step=1,
-                    key="bb_lmax_n",
-                )
-            with w_cols[1]:
-                ss["lmax_t"] = st.number_input(
-                    "Lmax t (minutes)",
-                    min_value=1,
-                    max_value=60,
-                    value=int(ss["lmax_t"]),
-                    step=1,
-                    key="bb_lmax_t",
-                )
+        try:
+            df = survey.leq_spectra()
+            ss["leq_df"] = df
+            if df is not None and not df.empty:
+                st.dataframe(df, use_container_width=True)
+            else:
+                st.info("No Leq spectra data available for the selected logs.")
+        except Exception as exc:
+            st.error(f"Failed to compute Leq spectra: {exc}")
+            ss["leq_df"] = None
 
-            broadband_container = st.container()
-            with broadband_container:
-                if not bool(ss["logs"]):
-                    st.info("No logs loaded yet.")
-                else:
-                    try:
-                        df = ss["survey"].broadband_summary(
-                            lmax_n=int(ss["lmax_n"]),
-                            lmax_t=f"{int(ss['lmax_t'])}min",
-                        )
-                        ss["broadband_df"] = df
+        st.download_button(
+            "Download CSV (full headers)",
+            data=to_csv_preserve_multiheader(ss.get("leq_df")),
+            file_name="leq_spectra.csv",
+            mime="text/csv",
+            key="dl_leq_csv",
+        )
 
-                        if not ss["broadband_df"].empty:
-                            st.dataframe(ss["broadband_df"], key="broadband_df", width="stretch")
-                        else:
-                            st.info("Run broadband_summary() to see results here.")
-                    except Exception as e:
-                        st.error(f"Failed to compute broadband_summary: {e}")
+    with summary_tabs[2]:
+        st.subheader("Lmax Spectra")
+        st.caption(
+            "The date shown for night-time results refers to the start date of the night period."
+        )
+        st.caption(
+            "This uses the highest A-weighted value and returns the corresponding event data."
+        )
 
-                st.download_button(
-                    "Download CSV (full headers)",
-                    data=to_csv_preserve_multiheader(ss["broadband_df"]),
-                    file_name="broadband_summary.csv",
-                    mime="text/csv",
-                    key="dl_broadband_csv",
-                )
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            nth = st.number_input(
+                "nth-highest Lmax",
+                min_value=1,
+                max_value=60,
+                value=int(ss["lmax_n"]),
+                step=1,
+                key="lmax_spectra_n",
+            )
+        with c2:
+            t_int = st.number_input(
+                "Desired time-resolution of Lmax (minutes)",
+                min_value=1,
+                max_value=60,
+                value=int(ss["lmax_t"]),
+                step=1,
+                key="lmax_spectra_t",
+            )
+        with c3:
+            period_label = st.selectbox(
+                "Which period to use for Lmax?",
+                options=["days", "evenings", "nights"],
+                index=2,
+                key="lmax_spectra_period",
+            )
 
-            st.divider()
+        if period_label == "evenings" and ss["times"]["evening"] == ss["times"]["night"]:
+            st.info("Evenings are currently disabled. Set different evening and night start times to enable them.")
 
-            # Leq tab
-            with summary_tabs[1]:
-                st.subheader("Leq Spectra")
-                st.text(
-                    "This function computes the combined Leq for the period in question over the entire survey (e.g. all days combined).")
-                leq_container = st.container()
+        try:
+            df = survey.lmax_spectra(
+                n=int(nth),
+                t=f"{int(t_int)}min",
+                period=period_label,
+            )
+            ss["lmax_df"] = df
+            if df is not None and not df.empty:
+                st.dataframe(df, use_container_width=True)
+            else:
+                st.info("No Lmax spectra data available for the selected logs and settings.")
+        except Exception as exc:
+            st.error(f"Failed to compute Lmax spectra: {exc}")
+            ss["lmax_df"] = None
 
-                with leq_container:
-                    if not bool(ss["logs"]):
-                        st.info("No logs loaded yet.")
-                    else:
-                        try:
-                            df = ss["survey"].leq_spectra()  # Always a DataFrame per your note
-                            ss["leq_df"] = df
+        st.download_button(
+            "Download CSV (full headers)",
+            data=to_csv_preserve_multiheader(ss.get("lmax_df")),
+            file_name="lmax_spectra.csv",
+            mime="text/csv",
+            key="dl_lmax_csv",
+        )
 
-                            # st.success(f"Leq spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-                            # Show cached result on rerun
-                            if not ss["leq_df"].empty:
-                                st.dataframe(ss["leq_df"], key="leq_df", width="stretch")
-                            else:
-                                st.info("Run leq_spectra() to see results here.")
-                        except Exception as e:
-                            st.error(f"Failed to compute leqspectra: {e}")
-                    st.download_button(
-                        "Download CSV (full headers)",
-                        data=to_csv_preserve_multiheader(ss["leq_df"]),
-                        file_name="leq.csv",
-                        mime="text/csv",
-                        key="dl_leq_csv",
-                    )
+    with summary_tabs[3]:
+        st.subheader("Modal and Value Counts")
 
-                st.divider()
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            parameter = st.selectbox(
+                "Which parameter to use?",
+                options=["L90", "Leq", "Lmax"],
+                index=0,
+                key="modal_parameter",
+            )
+            parameter_col = (parameter, "A")
+        with c2:
+            day_t = f"{st.selectbox('Daytime interval (minutes)', [1, 2, 5, 10, 15, 30, 60, 120], index=6, key='modal_day_t')}min"
+        with c3:
+            evening_t = f"{st.selectbox('Evening interval (minutes)', [1, 2, 5, 10, 15, 30, 60, 120], index=6, key='modal_evening_t')}min"
+        with c4:
+            night_t = f"{st.selectbox('Night interval (minutes)', [1, 2, 5, 10, 15, 30, 60, 120], index=4, key='modal_night_t')}min"
 
+        ss["modal_params"] = [parameter_col, day_t, evening_t, night_t]
 
-        # Compute and display broadband_summary directly from current logs
+        st.markdown("### Modal")
+        try:
+            modal_df = survey.modal(
+                cols=[parameter_col],
+                by_date=False,
+                day_t=day_t,
+                evening_t=evening_t,
+                night_t=night_t,
+            )
+            ss["modal_df"] = modal_df
+            if modal_df is not None and not modal_df.empty:
+                st.dataframe(modal_df, use_container_width=True)
+            else:
+                st.info("No modal data available for the selected logs and settings.")
+        except Exception as exc:
+            st.error(f"Failed to compute modal values: {exc}")
+            ss["modal_df"] = None
 
-        with summary_tabs[2]:
-            lmax_container = st.container()
+        st.download_button(
+            "Download CSV (full headers)",
+            data=to_csv_preserve_multiheader(ss.get("modal_df")),
+            file_name="modal.csv",
+            mime="text/csv",
+            key="dl_modal_csv",
+        )
 
-            with lmax_container:
-                st.subheader("Lmax Spectra")
-                st.text(
-                    "Note: the timestamp in the 'Date' column shows the date when the night-time period started, not the date on which the lmax occurred. e.g. 2025-08-14 00:14 lmax would have occured in the early hours of 2025-08-15.")
-                st.text(
-                    "This function works by selecting the highest A-weighted value, and the corresponding octave band data.")
-                col_nth, col_t, col_per = st.columns([1, 1, 1])
-                with col_nth:
-                    nth = st.number_input(
-                        label="nth-highest Lmax",
-                        min_value=1,
-                        max_value=60,
-                        value=ss["lmax_n"],
-                        step=1,
-                    )
-                with col_t:
-                    t_int = st.number_input(
-                        label="Desired time-resolution of Lmax (min).",
-                        min_value=1,
-                        max_value=60,
-                        value=ss["lmax_t"],
-                        step=1,
-                    )
-                    t_str = str(t_int) + "min"
-                with col_per:
-                    per = st.selectbox(
-                        label="Which period to use for Lmax?",
-                        options=["Days", "Evenings", "Nights"],
-                        index=2
-                    )
-                    per = per.lower()
-                if not bool(ss["logs"]):
-                    st.info("No logs loaded yet.")
-                else:
-                    try:
-                        df = ss["survey"].lmax_spectra(n=nth, t=t_str, period=per)  # Always a DataFrame per your note
-                        ss["lmax_df"] = df
-                        # st.success(f"Lmax spectra computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-                        # Show cached result on rerun
-                        # Notify user if evening period disabled
-                        if per == "evenings" and ss["times"]["evening"] == ss["times"]["night"]:
-                            st.info("Evenings are currently disabled. Enable them by setting the times in the sidebar.")
-                        if not ss["lmax_df"].empty:
-                            st.dataframe(ss["lmax_df"], key="lmax_df", width="stretch")
-                        else:
-                            st.info("Run lmax_spectra() to see results here.")
-                    except Exception as e:
-                        st.error(f"Failed to compute lmax_spectra: {e}")
-                st.download_button(
-                    "Download CSV (full headers)",
-                    data=to_csv_preserve_multiheader(ss["lmax_df"]),
-                    file_name="lmax.csv",
-                    mime="text/csv",
-                    key="dl_lmax_csv",
-                )
+        st.markdown("### Counts")
+        try:
+            counts_df = survey.counts(
+                cols=[parameter_col],
+                day_t=day_t,
+                evening_t=evening_t,
+                night_t=night_t,
+            )
+            ss["counts"] = counts_df
+            if counts_df is not None and not counts_df.empty:
+                st.dataframe(counts_df, use_container_width=True)
+            else:
+                st.info("No counts data available for the selected logs and settings.")
+        except Exception as exc:
+            st.error(f"Failed to compute counts: {exc}")
+            ss["counts"] = None
 
-
-            st.divider()
-
-
-        with summary_tabs[3]:
-            st.subheader("Modal and Value Counts")
-            modal_container = st.container()
-
-            with modal_container:
-                col_cols, col_day_t, col_eve_t, col_night_t = st.columns([1, 1, 1, 1])
-                with col_cols:
-                    par = st.selectbox(
-                        label="Which parameter to use for modal?",
-                        options=["L90", "Leq", "Lmax"],
-                        index=0
-                    )
-                    par_tup = (par, "A")
-                # TODO:
-                # with col_by_date:
-                #     by_date = st.selectbox(
-                #         label="Overall modal, or by date?",
-                #         options=["Overall", "By date"],
-                #         index=0
-                #     )
-                #     if by_date == "By date":
-                #         by_date = True
-                #     else:
-                #         by_date = False
-                with col_day_t:
-                    day_t = st.selectbox(
-                        label="Desired time-resolution of Daytime modal.",
-                        options=[1, 2, 5, 10, 15, 30, 60, 120],
-                        index=6
-                    )
-                    day_t = str(day_t) + "min"
-                with col_eve_t:
-                    eve_t = st.selectbox(
-                        label="Desired time-resolution of Evening modal.",
-                        options=[1, 2, 5, 10, 15, 30, 60, 120],
-                        index=6
-                    )
-                    eve_t = str(eve_t) + "min"
-                with col_night_t:
-                    night_t = st.selectbox(
-                        label="Desired time-resolution of Night modal.",
-                        options=[1, 2, 5, 10, 15, 30, 60, 120],
-                        index=4
-                    )
-                    night_t = str(night_t) + "min"
-
-                ss["modal_params"] = [par_tup, day_t, eve_t, night_t]
-                # Modal
-                st.markdown("## Modal")
-                try:
-                    df = ss["survey"].modal(
-                        cols=[par_tup],
-                        by_date=False,
-                        day_t=day_t,
-                        evening_t=eve_t,
-                        night_t=night_t
-                    )  # Always a DataFrame per your note
-                    ss["modal_df"] = df
-                    # st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-                    # Show cached result on rerun
-                    if not ss["modal_df"].empty:
-                        st.dataframe(ss["modal_df"], key="modal_df", width="stretch")
-                    else:
-                        st.info("Run modal() to see results here.")
-                except Exception as e:
-                    st.error(f"Failed to compute modal: {e}")
-
-                st.download_button(
-                    "Download CSV (full headers)",
-                    data=to_csv_preserve_multiheader(ss["modal_df"]),
-                    file_name="modal.csv",
-                    mime="text/csv",
-                    key="dl_modal_csv",
-                )
-
-                # Value counts
-                st.markdown("## Counts")
-                try:
-                    df = ss["survey"].counts(
-                        cols=[par_tup],
-                        day_t=day_t,
-                        evening_t=eve_t,
-                        night_t=night_t
-                    )
-                    ss["counts"] = df
-                    # st.success(f"Modal values computed: {df.shape[0]} rows, {df.shape[1]} columns.")
-                    # Show cached result on rerun
-                    if not ss["counts"].empty:
-                        st.dataframe(ss["counts"], key="counts_df", width="stretch")
-                    else:
-                        st.info("Run modal() to see results here.")
-                except Exception as e:
-                    st.error(f"Failed to compute modal: {e}")
-
-
-                # ss["counts"] = ss["survey"].counts()
-                st.download_button(
-                    "Download CSV (full headers)",
-                    data=to_csv_preserve_multiheader(ss["counts"]),
-                    file_name="counts.csv",
-                    mime="text/csv",
-                    key="dl_counts_csv",
-                )
-
-                st.divider()
-
+        st.download_button(
+            "Download CSV (full headers)",
+            data=to_csv_preserve_multiheader(ss.get("counts")),
+            file_name="counts.csv",
+            mime="text/csv",
+            key="dl_counts_csv",
+        )
