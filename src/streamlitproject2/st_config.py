@@ -74,6 +74,8 @@ def init_app_state():
     ss.setdefault("times", default_times.copy())
     ss.setdefault("show_upload_modal", False)
     ss.setdefault("counts_facet_overlap", False)
+    ss.setdefault("counts_include_all", False)
+    ss.setdefault("counts_all_t", "15min")
     ss.setdefault("modal_params", [("L90", "A"), "60min", "60min", "15min"])
     ss.setdefault("analysis_selected_logs", [])
     ss.setdefault("weather_country", "GB")
@@ -306,6 +308,8 @@ def _reset_workspace() -> None:
     ss["lmax_n"] = 10
     ss["lmax_t"] = 2
     ss["modal_params"] = [("L90", "A"), "60min", "60min", "15min"]
+    ss["counts_include_all"] = False
+    ss["counts_all_t"] = "15min"
     st.rerun()
 
 

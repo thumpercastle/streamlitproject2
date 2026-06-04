@@ -182,15 +182,69 @@ def analysis_page() -> None:
     with summary_tabs[3]:
         st.subheader("Modal and Value Counts")
 
+        # Build sorted list of all available columns from loaded logs
+        _all_modal_cols: set = set()
+        for _log_obj in ss["logs"].values():
+            try:
+                for _col in _log_obj.get_data().columns:
+                    if isinstance(_col, tuple):
+                        if str(_col[0]).lower() != "night idx":
+                            _all_modal_cols.add(_col)
+                    elif str(_col).lower() != "night idx":
+                        _all_modal_cols.add(_col)
+            except Exception:
+                pass
+
+        def _modal_col_sort_key(col):
+            _forder = {"L90": 0, "Leq": 1, "Lmax": 2}
+            family = str(col[0]) if isinstance(col, tuple) else str(col).split()[0]
+            band = col[1] if (isinstance(col, tuple) and len(col) > 1) else ""
+            forder = _forder.get(family, 99)
+            if isinstance(band, float):
+                band_key = (1, band)
+            elif str(band).upper() == "A":
+                band_key = (0, 0.0)
+            else:
+                try:
+                    band_key = (1, float(band))
+                except (TypeError, ValueError):
+                    band_key = (2, str(band))
+            return (forder, family, band_key)
+
+        def _fmt_modal_col(col):
+            if isinstance(col, tuple):
+                parts = []
+                for p in col:
+                    if str(p) in ("", "nan"):
+                        continue
+                    if isinstance(p, float) and p == int(p):
+                        parts.append(str(int(p)))
+                    else:
+                        parts.append(str(p))
+                return " ".join(parts)
+            return str(col)
+
+        _all_modal_cols_sorted = sorted(_all_modal_cols, key=_modal_col_sort_key)
+
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            parameter = st.selectbox(
-                "Which parameter to use?",
-                options=["L90", "Leq", "Lmax"],
-                index=0,
-                key="modal_parameter",
-            )
-            parameter_col = (parameter, "A")
+            if _all_modal_cols_sorted:
+                _current_param = ss.get("modal_params", [("L90", "A")])[0]
+                _default_idx = (
+                    _all_modal_cols_sorted.index(_current_param)
+                    if _current_param in _all_modal_cols_sorted
+                    else 0
+                )
+                parameter_col = st.selectbox(
+                    "Column",
+                    options=_all_modal_cols_sorted,
+                    index=_default_idx,
+                    format_func=_fmt_modal_col,
+                    key="modal_parameter_col",
+                )
+            else:
+                st.caption("Upload logs to see available columns.")
+                parameter_col = ("L90", "A")
         with c2:
             day_t = f"{st.selectbox('Daytime interval (minutes)', [1, 2, 5, 10, 15, 30, 60, 120], index=6, key='modal_day_t')}min"
         with c3:
@@ -200,6 +254,27 @@ def analysis_page() -> None:
 
         ss["modal_params"] = [parameter_col, day_t, evening_t, night_t]
 
+        _all_t_options = [1, 2, 5, 10, 15, 30, 60, 120]
+        _inc_col, _all_t_col = st.columns(2)
+        with _inc_col:
+            include_all = st.toggle(
+                "Include all-period summary",
+                value=ss.get("counts_include_all", False),
+                key="modal_include_all",
+            )
+            ss["counts_include_all"] = include_all
+        with _all_t_col:
+            if include_all:
+                _cur_all_t_min = int(ss.get("counts_all_t", "15min").replace("min", ""))
+                _all_t_idx = _all_t_options.index(_cur_all_t_min) if _cur_all_t_min in _all_t_options else 4
+                _all_t_min = st.selectbox(
+                    "All-period interval (minutes)",
+                    options=_all_t_options,
+                    index=_all_t_idx,
+                    key="modal_all_t",
+                )
+                ss["counts_all_t"] = f"{_all_t_min}min"
+
         st.markdown("### Modal")
         try:
             modal_df = survey.modal(
@@ -208,6 +283,8 @@ def analysis_page() -> None:
                 day_t=day_t,
                 evening_t=evening_t,
                 night_t=night_t,
+                include_all=include_all,
+                all_t=ss.get("counts_all_t", "15min"),
             )
             ss["modal_df"] = modal_df
             if modal_df is not None and not modal_df.empty:
@@ -233,6 +310,8 @@ def analysis_page() -> None:
                 day_t=day_t,
                 evening_t=evening_t,
                 night_t=night_t,
+                include_all=include_all,
+                all_t=ss.get("counts_all_t", "15min"),
             )
             ss["counts"] = counts_df
             if counts_df is not None and not counts_df.empty:
