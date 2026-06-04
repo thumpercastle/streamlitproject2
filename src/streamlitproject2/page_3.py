@@ -10,6 +10,7 @@ PERIOD_COLOURS = {
     "Daytime": "#FBAE18",
     "Evening": "#FF7F0E",
     "Night-time": "#4d4d4d",
+    "All": "#1f77b4",
 }
 
 
@@ -74,8 +75,30 @@ def _build_counts_figure(series: pd.Series, title: str, colour: str | None = Non
 
 def _normalise_plot_column_name(col) -> str:
     if isinstance(col, tuple):
-        return " ".join(str(part) for part in col if part not in (None, ""))
+        parts = []
+        for part in col:
+            if part in (None, ""):
+                continue
+            if isinstance(part, float) and part == int(part):
+                parts.append(str(int(part)))
+            else:
+                parts.append(str(part))
+        return " ".join(parts)
     return str(col)
+
+
+def _prepare_display_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a display-ready copy: Night idx dropped, float bands shown as integers."""
+    cols = [col for col in df.columns if _column_family(col) != "Night idx"]
+    display = df[cols].copy()
+
+    def _clean_col(col):
+        if isinstance(col, tuple):
+            return tuple(int(p) if isinstance(p, float) and p == int(p) else p for p in col)
+        return col
+
+    display.columns = [_clean_col(c) for c in display.columns]
+    return display
 
 
 def _split_column_parts(col) -> list[str]:
@@ -357,7 +380,7 @@ def vis_page() -> None:
                 st.info("Select at least one column to display the time history plot.")
 
             st.subheader(f"{name} resampled data")
-            st.dataframe(graph_df, use_container_width=True)
+            st.dataframe(_prepare_display_df(graph_df), use_container_width=True)
 
             st.divider()
 
@@ -392,6 +415,16 @@ def vis_page() -> None:
                         period_counts[period_label] = counts_series
                 except Exception as exc:
                     st.warning(f"Could not compute {period_label.lower()} counts: {exc}")
+
+            if ss.get("counts_include_all", False):
+                _all_t = ss.get("counts_all_t", "15min")
+                try:
+                    _all_interval = log.as_interval(t=_all_t)
+                    _all_series = log.counts(data=_all_interval, cols=[counts_col])
+                    if not _all_series.empty:
+                        period_counts["All"] = _all_series
+                except Exception as exc:
+                    st.warning(f"Could not compute all-period counts: {exc}")
 
             if not period_counts:
                 st.info("No counts data available for this log.")

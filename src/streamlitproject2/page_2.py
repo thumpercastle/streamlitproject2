@@ -213,7 +213,15 @@ def analysis_page() -> None:
 
         def _fmt_modal_col(col):
             if isinstance(col, tuple):
-                return " ".join(str(p) for p in col if str(p) not in ("", "nan"))
+                parts = []
+                for p in col:
+                    if str(p) in ("", "nan"):
+                        continue
+                    if isinstance(p, float) and p == int(p):
+                        parts.append(str(int(p)))
+                    else:
+                        parts.append(str(p))
+                return " ".join(parts)
             return str(col)
 
         _all_modal_cols_sorted = sorted(_all_modal_cols, key=_modal_col_sort_key)
@@ -246,6 +254,27 @@ def analysis_page() -> None:
 
         ss["modal_params"] = [parameter_col, day_t, evening_t, night_t]
 
+        _all_t_options = [1, 2, 5, 10, 15, 30, 60, 120]
+        _inc_col, _all_t_col = st.columns(2)
+        with _inc_col:
+            include_all = st.toggle(
+                "Include all-period summary",
+                value=ss.get("counts_include_all", False),
+                key="modal_include_all",
+            )
+            ss["counts_include_all"] = include_all
+        with _all_t_col:
+            if include_all:
+                _cur_all_t_min = int(ss.get("counts_all_t", "15min").replace("min", ""))
+                _all_t_idx = _all_t_options.index(_cur_all_t_min) if _cur_all_t_min in _all_t_options else 4
+                _all_t_min = st.selectbox(
+                    "All-period interval (minutes)",
+                    options=_all_t_options,
+                    index=_all_t_idx,
+                    key="modal_all_t",
+                )
+                ss["counts_all_t"] = f"{_all_t_min}min"
+
         st.markdown("### Modal")
         try:
             modal_df = survey.modal(
@@ -254,6 +283,8 @@ def analysis_page() -> None:
                 day_t=day_t,
                 evening_t=evening_t,
                 night_t=night_t,
+                include_all=include_all,
+                all_t=ss.get("counts_all_t", "15min"),
             )
             ss["modal_df"] = modal_df
             if modal_df is not None and not modal_df.empty:
@@ -279,6 +310,8 @@ def analysis_page() -> None:
                 day_t=day_t,
                 evening_t=evening_t,
                 night_t=night_t,
+                include_all=include_all,
+                all_t=ss.get("counts_all_t", "15min"),
             )
             ss["counts"] = counts_df
             if counts_df is not None and not counts_df.empty:
