@@ -70,9 +70,30 @@ def _normalise_plot_column_name(col) -> str:
     return str(col)
 
 
-def _time_history_colour(label: str, index: int) -> str:
+def _column_family(col) -> str:
+    if isinstance(col, tuple) and col:
+        return str(col[0]).strip()
+    text = str(col).strip()
+    return text.split()[0] if text else ""
+
+
+def _column_band(col) -> str:
+    if isinstance(col, tuple) and len(col) > 1:
+        return str(col[1]).strip()
+    text = str(col).strip()
+    parts = text.split(maxsplit=1)
+    return parts[1].strip() if len(parts) > 1 else ""
+
+
+def _base_default_colour(col, index: int) -> str:
+    label = _normalise_plot_column_name(col)
     if label in COLOURS:
         return COLOURS[label]
+
+    family = _column_family(col)
+    family_a_label = f"{family} A"
+    if family_a_label in COLOURS:
+        return COLOURS[family_a_label]
 
     fallback_colours = [
         "#1f77b4",
@@ -88,22 +109,24 @@ def _time_history_colour(label: str, index: int) -> str:
     return fallback_colours[index % len(fallback_colours)]
 
 
-def _column_family(col) -> str:
-    if isinstance(col, tuple) and col:
-        return str(col[0]).strip()
-    return str(col).strip().split()[0] if str(col).strip() else ""
-
-
 def _is_lmax_column(col) -> bool:
     return _column_family(col).lower() == "lmax"
 
 
 def _default_plot_columns(available_plot_cols: list) -> list:
-    preferred_defaults = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
-    selected = [col for col in preferred_defaults if col in available_plot_cols]
+    selected = []
 
     for family in ["Leq", "Lmax", "L90"]:
-        if any(_column_family(col) == family for col in selected):
+        exact_a = next(
+            (
+                col
+                for col in available_plot_cols
+                if _column_family(col) == family and _column_band(col).upper() == "A"
+            ),
+            None,
+        )
+        if exact_a is not None:
+            selected.append(exact_a)
             continue
 
         fallback = next((col for col in available_plot_cols if _column_family(col) == family), None)
@@ -111,6 +134,10 @@ def _default_plot_columns(available_plot_cols: list) -> list:
             selected.append(fallback)
 
     return selected[:9]
+
+
+def _default_trace_mode(col) -> str:
+    return "point" if _is_lmax_column(col) else "line"
 
 
 def vis_page() -> None:
@@ -170,6 +197,38 @@ def vis_page() -> None:
             )
 
             if selected_cols:
+                st.markdown("#### Plot styling")
+
+                for trace_index, col in enumerate(selected_cols):
+                    label = _normalise_plot_column_name(col)
+                    mode_key = f"time_history_mode_{name}_{label}"
+                    colour_key = f"time_history_colour_{name}_{label}"
+
+                    if mode_key not in ss:
+                        ss[mode_key] = _default_trace_mode(col)
+                    if colour_key not in ss:
+                        ss[colour_key] = _base_default_colour(col, trace_index)
+
+                style_columns = st.columns(3)
+                for idx_col, col in enumerate(selected_cols):
+                    label = _normalise_plot_column_name(col)
+                    mode_key = f"time_history_mode_{name}_{label}"
+                    colour_key = f"time_history_colour_{name}_{label}"
+
+                    with style_columns[idx_col % 3]:
+                        st.markdown(f"**{label}**")
+                        ss[mode_key] = st.selectbox(
+                            "Style",
+                            options=["line", "point", "bar"],
+                            index=["line", "point", "bar"].index(ss[mode_key]),
+                            key=f"{mode_key}_widget",
+                        )
+                        ss[colour_key] = st.color_picker(
+                            "Colour",
+                            value=ss[colour_key],
+                            key=f"{colour_key}_widget",
+                        )
+
                 fig = go.Figure()
 
                 for trace_index, col in enumerate(selected_cols):
@@ -179,24 +238,36 @@ def vis_page() -> None:
                     if not series.notna().any():
                         continue
 
-                    is_lmax = _is_lmax_column(col)
+                    mode_value = ss.get(f"time_history_mode_{name}_{label}", _default_trace_mode(col))
+                    colour_value = ss.get(f"time_history_colour_{name}_{label}", _base_default_colour(col, trace_index))
 
-                    fig.add_trace(
-                        go.Scatter(
-                            x=graph_df.index,
-                            y=series,
-                            name=label,
-                            mode="markers" if is_lmax else "lines",
-                            line=dict(
-                                color=_time_history_colour(label, trace_index),
-                                width=2,
-                            ) if not is_lmax else None,
-                            marker=dict(
-                                color=_time_history_colour(label, trace_index),
-                                size=4,
-                            ) if is_lmax else None,
+                    if mode_value == "bar":
+                        fig.add_trace(
+                            go.Bar(
+                                x=graph_df.index,
+                                y=series,
+                                name=label,
+                                marker_color=colour_value,
+                            )
                         )
-                    )
+                    else:
+                        scatter_mode = "lines" if mode_value == "line" else "markers"
+                        fig.add_trace(
+                            go.Scatter(
+                                x=graph_df.index,
+                                y=series,
+                                name=label,
+                                mode=scatter_mode,
+                                line=dict(
+                                    color=colour_value,
+                                    width=2,
+                                ) if mode_value == "line" else None,
+                                marker=dict(
+                                    color=colour_value,
+                                    size=6 if mode_value == "point" else 4,
+                                ) if mode_value == "point" else None,
+                            )
+                        )
 
                 fig.update_layout(
                     template=TEMPLATE,
@@ -207,7 +278,7 @@ def vis_page() -> None:
                         tickformat="%H:%M<br>%d/%m/%Y",
                         tickangle=0,
                     ),
-                    yaxis_title="Measured Sound Pressure Level dB",
+                    yaxis_title="Measured Sound Pressure Level dB(A)",
                     legend=dict(
                         orientation="h",
                         yanchor="top",
@@ -216,6 +287,7 @@ def vis_page() -> None:
                         x=0,
                     ),
                     height=600,
+                    barmode="overlay",
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
