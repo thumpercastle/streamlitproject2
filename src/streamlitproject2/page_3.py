@@ -70,19 +70,20 @@ def _normalise_plot_column_name(col) -> str:
     return str(col)
 
 
+def _split_column_parts(col) -> list[str]:
+    if isinstance(col, tuple):
+        return [str(part).strip() for part in col if str(part).strip()]
+    return [part.strip() for part in str(col).split() if part.strip()]
+
+
 def _column_family(col) -> str:
-    if isinstance(col, tuple) and col:
-        return str(col[0]).strip()
-    text = str(col).strip()
-    return text.split()[0] if text else ""
+    parts = _split_column_parts(col)
+    return parts[0] if parts else ""
 
 
 def _column_band(col) -> str:
-    if isinstance(col, tuple) and len(col) > 1:
-        return str(col[1]).strip()
-    text = str(col).strip()
-    parts = text.split(maxsplit=1)
-    return parts[1].strip() if len(parts) > 1 else ""
+    parts = _split_column_parts(col)
+    return parts[1] if len(parts) > 1 else ""
 
 
 def _base_default_colour(col, index: int) -> str:
@@ -113,6 +114,12 @@ def _is_lmax_column(col) -> bool:
     return _column_family(col).lower() == "lmax"
 
 
+def _column_matches_family(col, family: str) -> bool:
+    family_lower = family.lower()
+    parts = [part.lower() for part in _split_column_parts(col)]
+    return family_lower in parts
+
+
 def _default_plot_columns(available_plot_cols: list) -> list:
     selected = []
 
@@ -121,7 +128,7 @@ def _default_plot_columns(available_plot_cols: list) -> list:
             (
                 col
                 for col in available_plot_cols
-                if _column_family(col) == family and _column_band(col).upper() == "A"
+                if _column_matches_family(col, family) and _column_band(col).upper() == "A"
             ),
             None,
         )
@@ -129,7 +136,7 @@ def _default_plot_columns(available_plot_cols: list) -> list:
             selected.append(exact_a)
             continue
 
-        fallback = next((col for col in available_plot_cols if _column_family(col) == family), None)
+        fallback = next((col for col in available_plot_cols if _column_matches_family(col, family)), None)
         if fallback is not None:
             selected.append(fallback)
 
@@ -138,6 +145,13 @@ def _default_plot_columns(available_plot_cols: list) -> list:
 
 def _default_trace_mode(col) -> str:
     return "point" if _is_lmax_column(col) else "line"
+
+
+def _column_sort_key(col) -> tuple[int, str, str]:
+    family_order = {"Leq": 0, "Lmax": 1, "L90": 2}
+    family = _column_family(col)
+    band = _column_band(col)
+    return family_order.get(family, 99), family, band
 
 
 def vis_page() -> None:
@@ -180,11 +194,35 @@ def vis_page() -> None:
                 available_cols = list(graph_df.columns)
 
             available_plot_cols = []
+            debug_rows = []
+
             for col in available_cols:
-                series = pd.to_numeric(graph_df[col], errors="coerce")
-                if series.notna().any():
+                label = _normalise_plot_column_name(col)
+                family = _column_family(col)
+                band = _column_band(col)
+
+                try:
+                    series = pd.to_numeric(graph_df[col], errors="coerce")
+                    numeric_values = int(series.notna().sum())
+                except Exception:
+                    series = pd.Series(dtype="float64")
+                    numeric_values = 0
+
+                include_col = numeric_values > 0
+                if include_col:
                     available_plot_cols.append(col)
 
+                debug_rows.append(
+                    {
+                        "Column": label,
+                        "Family": family,
+                        "Band": band,
+                        "Numeric values": numeric_values,
+                        "Available to plot": include_col,
+                    }
+                )
+
+            available_plot_cols = sorted(available_plot_cols, key=_column_sort_key)
             default_selected_cols = _default_plot_columns(available_plot_cols)
 
             selected_cols = st.multiselect(
@@ -195,6 +233,23 @@ def vis_page() -> None:
                 max_selections=9,
                 key=f"time_history_cols_{name}",
             )
+
+            with st.expander("Plot column diagnostics", expanded=False):
+                debug_df = pd.DataFrame(debug_rows).sort_values(
+                    by=["Family", "Band", "Column"],
+                    na_position="last",
+                )
+                st.dataframe(debug_df, use_container_width=True, hide_index=True)
+
+                family_counts = {}
+                for family in ["Leq", "Lmax", "L90"]:
+                    family_counts[family] = sum(1 for col in available_plot_cols if _column_matches_family(col, family))
+                st.caption(
+                    f"Available plot columns by family: "
+                    f"Leq={family_counts['Leq']}, "
+                    f"Lmax={family_counts['Lmax']}, "
+                    f"L90={family_counts['L90']}"
+                )
 
             if selected_cols:
                 st.markdown("#### Plot styling")
