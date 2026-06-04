@@ -1030,14 +1030,14 @@ files = [
 
 [[package]]
 name = "pycoustic"
-version = "0.2.3"
+version = "0.2.4"
 description = ""
 optional = false
 python-versions = "<=3.13,>=3.11"
 groups = ["main"]
 files = [
-    {file = "pycoustic-0.2.3-py3-none-any.whl", hash = "sha256:600829281ac65ab30f28a777531d0ba6ad3aa9e0c83da43a5206fdb7a3223705"},
-    {file = "pycoustic-0.2.3.tar.gz", hash = "sha256:95b702cea0841d21d322f345bee0f21478877573e7564ab7f0ced36bcac8c5c1"},
+    {file = "pycoustic-0.2.4-py3-none-any.whl", hash = "sha256:23b5151099c6252eef040c21d227848ba69bfea4df04c4f2b1df211a9087748a"},
+    {file = "pycoustic-0.2.4.tar.gz", hash = "sha256:855a8463f5d0bb12181326bd6f37f696cb7a6d54e4117a19e017b4dbf3fd9e01"},
 ]
 
 [package.dependencies]
@@ -1584,4 +1584,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "<=3.13,>=3.11"
-content-hash = "84724ed903f67a99aabe27ad88b12b3179dfe126e48393e3fbe31fc36cb103a7"
+content-hash = "b3132754fbf6578255a376d451aa827d7a2f724db4a856dc1d2d68760c5e277a"
