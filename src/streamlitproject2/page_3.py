@@ -6,6 +6,12 @@ from st_config import COLOURS, TEMPLATE, init_app_state
 
 ss = init_app_state()
 
+PERIOD_COLOURS = {
+    "Daytime": "#FBAE18",
+    "Evening": "#FF7F0E",
+    "Night-time": "#4d4d4d",
+}
+
 
 def _counts_series_for_log(counts_df, log_name: str) -> pd.Series:
     if counts_df is None:
@@ -34,7 +40,9 @@ def _counts_series_for_log(counts_df, log_name: str) -> pd.Series:
     return pd.Series(dtype="float64")
 
 
-def _build_counts_figure(series: pd.Series, title: str) -> go.Figure:
+def _build_counts_figure(series: pd.Series, title: str, colour: str | None = None) -> go.Figure:
+    if colour is None:
+        colour = COLOURS["Leq A"]
     plot_series = pd.to_numeric(series, errors="coerce").dropna()
     if not plot_series.empty:
         try:
@@ -48,7 +56,7 @@ def _build_counts_figure(series: pd.Series, title: str) -> go.Figure:
         go.Bar(
             x=[str(x) for x in plot_series.index],
             y=plot_series.values,
-            marker_color=COLOURS["Leq A"],
+            marker_color=colour,
             name="Count",
         )
     )
@@ -355,39 +363,73 @@ def vis_page() -> None:
 
             st.subheader(f"{name} counts", divider=True)
 
-            counts_col_options = [
-                col for col in available_plot_cols
-                if col not in [("Night idx", ""), "Night idx"]
-            ]
+            counts_col = modal_param
+            counts_label = _normalise_plot_column_name(counts_col)
 
-            if not counts_col_options:
-                st.info("No numeric columns available for counts distribution.")
-            else:
-                default_counts_col = modal_param if modal_param in counts_col_options else counts_col_options[0]
-                counts_col = st.selectbox(
-                    "Column for counts distribution",
-                    options=counts_col_options,
-                    index=counts_col_options.index(default_counts_col),
-                    format_func=_normalise_plot_column_name,
-                    key=f"counts_col_{name}",
-                )
+            st.caption(
+                f"Column: **{counts_label}** · Day T: {day_t} · Evening T: {evening_t} · Night T: {night_t}. "
+                "Change these on the **Analysis** page → **Modal and counts** tab."
+            )
 
+            stack_counts = st.toggle(
+                "Overlay periods on one chart",
+                value=ss.get("counts_facet_overlap", False),
+                key=f"counts_stack_{name}",
+            )
+            ss["counts_facet_overlap"] = stack_counts
+
+            period_defs = [("Daytime", "days", day_t), ("Night-time", "nights", night_t)]
+            if log.is_evening():
+                period_defs.insert(1, ("Evening", "evenings", evening_t))
+
+            period_counts: dict = {}
+            for period_label, period_key, period_t in period_defs:
                 try:
-                    log_counts = log.counts(data=graph_df, cols=[counts_col])
+                    interval_df = log.as_interval(t=period_t)
+                    period_df = log.get_period(data=interval_df, period=period_key)
+                    counts_series = log.counts(data=period_df, cols=[counts_col])
+                    if not counts_series.empty:
+                        period_counts[period_label] = counts_series
                 except Exception as exc:
-                    st.error(f"Failed to compute counts for {name}: {exc}")
-                    log_counts = pd.Series(dtype="int64")
+                    st.warning(f"Could not compute {period_label.lower()} counts: {exc}")
 
-                if log_counts.empty:
-                    st.info("No counts data available for this log.")
-                else:
-                    counts_label = _normalise_plot_column_name(counts_col)
-                    counts_fig = _build_counts_figure(log_counts, title=f"{name} — {counts_label} counts")
-                    st.plotly_chart(
-                        counts_fig,
-                        use_container_width=True,
-                        config={
-                            "displayModeBar": "hover",
-                            "responsive": True,
-                        },
-                    )
+            if not period_counts:
+                st.info("No counts data available for this log.")
+            elif stack_counts:
+                fig = go.Figure()
+                for period_label, counts_series in period_counts.items():
+                    plot_series = pd.to_numeric(counts_series, errors="coerce").dropna()
+                    try:
+                        sort_index = sorted(plot_series.index, key=lambda v: float(v))
+                        plot_series = plot_series.reindex(sort_index)
+                    except Exception:
+                        pass
+                    fig.add_trace(go.Bar(
+                        x=[str(x) for x in plot_series.index],
+                        y=plot_series.values,
+                        name=period_label,
+                        marker_color=PERIOD_COLOURS.get(period_label, "#7f7f7f"),
+                        opacity=0.75,
+                    ))
+                fig.update_layout(
+                    template=TEMPLATE,
+                    title=f"{name} — {counts_label} counts by period",
+                    xaxis_title="Value (dB)",
+                    yaxis_title="Count",
+                    margin=dict(l=0, r=0, t=48, b=0),
+                    height=420,
+                    barmode="overlay",
+                    legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="left", x=0),
+                )
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": "hover", "responsive": True})
+            else:
+                chart_cols = st.columns(len(period_counts))
+                for col_idx, (period_label, counts_series) in enumerate(period_counts.items()):
+                    with chart_cols[col_idx]:
+                        colour = PERIOD_COLOURS.get(period_label, COLOURS["Leq A"])
+                        period_fig = _build_counts_figure(counts_series, title=period_label, colour=colour)
+                        st.plotly_chart(
+                            period_fig,
+                            use_container_width=True,
+                            config={"displayModeBar": "hover", "responsive": True},
+                        )
