@@ -88,6 +88,31 @@ def _time_history_colour(label: str, index: int) -> str:
     return fallback_colours[index % len(fallback_colours)]
 
 
+def _column_family(col) -> str:
+    if isinstance(col, tuple) and col:
+        return str(col[0]).strip()
+    return str(col).strip().split()[0] if str(col).strip() else ""
+
+
+def _is_lmax_column(col) -> bool:
+    return _column_family(col).lower() == "lmax"
+
+
+def _default_plot_columns(available_plot_cols: list) -> list:
+    preferred_defaults = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
+    selected = [col for col in preferred_defaults if col in available_plot_cols]
+
+    for family in ["Leq", "Lmax", "L90"]:
+        if any(_column_family(col) == family for col in selected):
+            continue
+
+        fallback = next((col for col in available_plot_cols if _column_family(col) == family), None)
+        if fallback is not None:
+            selected.append(fallback)
+
+    return selected[:9]
+
+
 def vis_page() -> None:
     st.header("Visualisation", divider=True)
 
@@ -103,8 +128,6 @@ def vis_page() -> None:
     day_t = modal_params[1]
     evening_t = modal_params[2]
     night_t = modal_params[3]
-
-    default_plot_cols = [("Leq", "A"), ("Lmax", "A"), ("L90", "A")]
 
     for idx, (name, log) in enumerate(log_items):
         with tabs[idx]:
@@ -135,7 +158,7 @@ def vis_page() -> None:
                 if series.notna().any():
                     available_plot_cols.append(col)
 
-            default_selected_cols = [col for col in default_plot_cols if col in available_plot_cols]
+            default_selected_cols = _default_plot_columns(available_plot_cols)
 
             selected_cols = st.multiselect(
                 "Select up to 9 columns to plot",
@@ -156,7 +179,7 @@ def vis_page() -> None:
                     if not series.notna().any():
                         continue
 
-                    is_lmax = label == "Lmax A"
+                    is_lmax = _is_lmax_column(col)
 
                     fig.add_trace(
                         go.Scatter(
@@ -184,7 +207,7 @@ def vis_page() -> None:
                         tickformat="%H:%M<br>%d/%m/%Y",
                         tickangle=0,
                     ),
-                    yaxis_title="Measured Sound Pressure Level dB(A)",
+                    yaxis_title="Measured Sound Pressure Level dB",
                     legend=dict(
                         orientation="h",
                         yanchor="top",
