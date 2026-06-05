@@ -123,6 +123,19 @@ def config_page() -> None:
         "** Night-time must cross over midnight."
     )
 
+    averaging_choice = st.radio(
+        "L90 averaging method",
+        options=["Logarithmic (energy)", "Arithmetic (simple mean)"],
+        index=0 if ss.get("l90_averaging", "log") == "log" else 1,
+        horizontal=True,
+        help=(
+            "Controls how L90 values are combined when resampling to longer intervals. "
+            "**Logarithmic** treats each measurement as acoustic energy — appropriate for energy-equivalent metrics. "
+            "**Arithmetic** takes a plain numerical average of the dB values — conventional for statistical noise descriptors such as L90."
+        ),
+    )
+    ss["l90_averaging"] = "log" if averaging_choice.startswith("Log") else "arithmetic"
+
     times = parse_times(day_start, evening_start, night_start)
     ss["times"] = times
 
@@ -164,6 +177,7 @@ def config_page() -> None:
                 day_t=day_t,
                 evening_t=evening_t,
                 night_t=night_t,
+                averaging=ss.get("l90_averaging", "log"),
             )
         except Exception:
             ss["modal_df"] = None
@@ -175,6 +189,7 @@ def config_page() -> None:
                 day_t=day_t,
                 evening_t=evening_t,
                 night_t=night_t,
+                averaging=ss.get("l90_averaging", "log"),
             )
         except Exception:
             ss["counts"] = None
