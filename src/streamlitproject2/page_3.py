@@ -212,7 +212,7 @@ def vis_page() -> None:
             period = f"{period_minutes}min"
 
             try:
-                graph_df = log.as_interval(t=period)
+                graph_df = log.as_interval(t=period, averaging=ss.get("l90_averaging", "log"))
             except Exception as exc:
                 st.error(f"Failed to resample data for {name}: {exc}")
                 continue
@@ -408,7 +408,7 @@ def vis_page() -> None:
             period_counts: dict = {}
             for period_label, period_key, period_t in period_defs:
                 try:
-                    interval_df = log.as_interval(t=period_t)
+                    interval_df = log.as_interval(t=period_t, averaging=ss.get("l90_averaging", "log"))
                     period_df = log.get_period(data=interval_df, period=period_key)
                     counts_series = log.counts(data=period_df, cols=[counts_col])
                     if not counts_series.empty:
@@ -419,7 +419,7 @@ def vis_page() -> None:
             if ss.get("counts_include_all", False):
                 _all_t = ss.get("counts_all_t", "15min")
                 try:
-                    _all_interval = log.as_interval(t=_all_t)
+                    _all_interval = log.as_interval(t=_all_t, averaging=ss.get("l90_averaging", "log"))
                     _all_series = log.counts(data=_all_interval, cols=[counts_col])
                     if not _all_series.empty:
                         period_counts["All"] = _all_series
