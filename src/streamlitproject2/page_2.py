@@ -44,6 +44,7 @@ def analysis_page() -> None:
             "Leq spectra",
             "Lmax spectra",
             "Modal and counts",
+            "Peak Picker",
         ]
     )
 
@@ -329,3 +330,128 @@ def analysis_page() -> None:
             mime="text/csv",
             key="dl_counts_csv",
         )
+
+    with summary_tabs[4]:
+        st.subheader("Peak Picker")
+        st.caption(
+            "Select a log and pivot column to find the K highest or K lowest"
+            " values and view their corresponding spectra."
+        )
+
+        log_options = list(ss["logs"].keys())
+        if not log_options:
+            st.info("No logs loaded.")
+        else:
+            selected_log = st.selectbox(
+                "Select log",
+                options=log_options,
+                index=0,
+                key="peak_picker_log",
+            )
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                pivot_family = st.selectbox(
+                    "Pivot column",
+                    options=["Lmax", "Leq", "L90", "L10", "Lmin", "Lpeak"],
+                    index=0,
+                    key="peak_picker_family",
+                )
+            with col2:
+                k_val = st.number_input(
+                    "K (number of peaks)",
+                    min_value=1,
+                    max_value=100,
+                    value=5,
+                    step=1,
+                    key="peak_picker_k",
+                )
+            with col3:
+                high_low = st.radio(
+                    "Direction",
+                    options=["Highest", "Lowest"],
+                    index=0,
+                    key="peak_picker_direction",
+                )
+
+            try:
+                log_obj = ss["logs"].get(selected_log)
+                if log_obj is None:
+                    st.error("Selected log not found.")
+                else:
+                    data = log_obj.get_data()
+                    pivot_candidates = [
+                        c for c in data.columns
+                        if c[0] == pivot_family
+                    ]
+                    if not pivot_candidates:
+                        st.warning(f"No columns found for family {pivot_family!r}.")
+                    else:
+                        band_label = st.selectbox(
+                            "Band",
+                            options=[str(c[1]) for c in pivot_candidates],
+                            index=0,
+                            key="peak_picker_band",
+                        )
+                        band_val = pivot_candidates[0][1]
+                        for c in pivot_candidates:
+                            if str(c[1]) == band_label:
+                                band_val = c[1]
+                                break
+                        pivot_col = (pivot_family, band_val)
+
+                        survey = ss.get("survey")
+                        if survey is not None:
+                            peaks_df, history = survey.peak_picker(
+                                log_name=selected_log,
+                                pivot_col=pivot_col,
+                                k=int(k_val),
+                                high=(high_low == "Highest"),
+                            )
+
+                            if not peaks_df.empty:
+                                st.subheader("Time history with peaks")
+                                import plotly.graph_objects as go
+                                fig = go.Figure()
+                                fig.add_trace(go.Scatter(
+                                    x=history.index,
+                                    y=history.values,
+                                    mode="lines",
+                                    name=str(pivot_col),
+                                    line=dict(color="#1f77b4"),
+                                ))
+                                peak_times = peaks_df.index
+                                peak_vals = history.loc[peak_times]
+                                fig.add_trace(go.Scatter(
+                                    x=peak_times,
+                                    y=peak_vals,
+                                    mode="markers",
+                                    name=f"Top {int(k_val)} peaks",
+                                    marker=dict(
+                                        color="red",
+                                        size=10,
+                                        symbol="circle",
+                                    ),
+                                ))
+                                fig.update_layout(
+                                    xaxis_title="Time",
+                                    yaxis_title=f"{pivot_col} [dB]",
+                                    height=400,
+                                    margin=dict(l=40, r=20, t=20, b=40),
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+
+                                st.subheader("Peak spectra")
+                                st.dataframe(peaks_df, use_container_width=True)
+
+                                st.download_button(
+                                    "Download peaks CSV",
+                                    data=to_csv_preserve_multiheader(peaks_df),
+                                    file_name="peak_picker.csv",
+                                    mime="text/csv",
+                                    key="dl_peak_csv",
+                                )
+                            else:
+                                st.info("No peaks found for the current selection.")
+            except Exception as exc:
+                st.error(f"Peak Picker failed: {exc}")
