@@ -442,11 +442,42 @@ def analysis_page() -> None:
                                 st.plotly_chart(fig, use_container_width=True)
 
                                 st.subheader("Peak spectra")
-                                st.dataframe(peaks_df, use_container_width=True)
+                                # Filter out internal columns and sort by metric family
+                                drop_cols = [("Night idx", ""), ("Time", "")]
+                                display_cols = [c for c in peaks_df.columns if c not in drop_cols]
+                                display_cols = sorted(display_cols, key=lambda c: (c[0], str(c[1])))
+                                display_df = peaks_df[display_cols] if display_cols else peaks_df
+                                st.dataframe(display_df, use_container_width=True)
+
+                                # Build combined peaks across ALL logs for download
+                                survey_in = ss.get("survey")
+                                all_peaks_list = []
+                                if survey_in is not None:
+                                    for name in ss["logs"].keys():
+                                        try:
+                                            pk, _ = survey_in.peak_picker(
+                                                log_name=name,
+                                                pivot_col=pivot_col,
+                                                k=int(k_val),
+                                                high=(high_low == "Highest"),
+                                            )
+                                            if not pk.empty:
+                                                pk = pk.rename_axis("Timestamp")
+                                                pk["Log"] = name
+                                                all_peaks_list.append(pk)
+                                        except Exception:
+                                            pass
+
+                                if all_peaks_list:
+                                    combined_peaks = pd.concat(all_peaks_list)
+                                else:
+                                    combined_peaks = peaks_df.copy()
+                                    combined_peaks = combined_peaks.rename_axis("Timestamp")
+                                    combined_peaks["Log"] = selected_log
 
                                 st.download_button(
-                                    "Download peaks CSV",
-                                    data=to_csv_preserve_multiheader(peaks_df),
+                                    "Download peaks CSV (all logs)",
+                                    data=to_csv_preserve_multiheader(combined_peaks),
                                     file_name="peak_picker.csv",
                                     mime="text/csv",
                                     key="dl_peak_csv",

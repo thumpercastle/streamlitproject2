@@ -181,6 +181,27 @@ def _render_upload_modal_contents() -> None:
         if file_hash in known_hashes:
             continue
         known_hashes.add(file_hash)
+        # Detect file type for XLSX files
+        detected_type = "CSV (pre-formatted)"
+        fname_lower = uploaded.name.lower()
+        if fname_lower.endswith(".xlsx"):
+            try:
+                import tempfile as _tf, os as _os
+                _tmp = _tf.NamedTemporaryFile(suffix=".xlsx", delete=False)
+                _tmp.write(file_bytes)
+                _tmp.close()
+                from pycoustic.parsers.nor140_overview_xlsx import Nor140OverviewXlsxParser
+                from pycoustic.parsers.nor145_multi_th import Nor145MultipleTHParser
+                if Nor140OverviewXlsxParser.can_parse(_tmp.name):
+                    detected_type = "Nor140 overview"
+                elif Nor145MultipleTHParser.can_parse(_tmp.name):
+                    detected_type = "Nor145 multi-TH"
+                else:
+                    detected_type = "XLSX (unknown format)"
+                _os.unlink(_tmp.name)
+            except Exception:
+                detected_type = "XLSX (parse error)"
+
         queue.append(
             {
                 "id": uuid4().hex,
@@ -189,6 +210,7 @@ def _render_upload_modal_contents() -> None:
                 "data": file_bytes,
                 "custom_name": os.path.splitext(os.path.basename(uploaded.name))[0],
                 "size": len(file_bytes),
+                "detected_type": detected_type,
             }
         )
 
@@ -219,6 +241,7 @@ def _render_upload_modal_contents() -> None:
                 "Original name": item["original_name"],
                 "Custom name": item.get("custom_name", ""),
                 "Size": _format_bytes(item["size"]),
+                "Detected format": item.get("detected_type", ""),
             }
             for item in queue
         ]
