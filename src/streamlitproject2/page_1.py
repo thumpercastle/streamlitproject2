@@ -178,6 +178,7 @@ def config_page() -> None:
                 evening_t=evening_t,
                 night_t=night_t,
                 averaging=ss.get("l90_averaging", "log"),
+                ln_averaging=ss.get("l90_averaging", "log"),
             )
         except Exception:
             ss["modal_df"] = None
@@ -190,6 +191,7 @@ def config_page() -> None:
                 evening_t=evening_t,
                 night_t=night_t,
                 averaging=ss.get("l90_averaging", "log"),
+                ln_averaging=ss.get("l90_averaging", "log"),
             )
         except Exception:
             ss["counts"] = None
