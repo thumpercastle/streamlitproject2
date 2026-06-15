@@ -164,11 +164,11 @@ def _update_pending_uploads(queue: list[dict]) -> None:
 
 def _render_upload_modal_contents() -> None:
     uploaded_files = st.file_uploader(
-        "Select CSV files",
-        type=["csv"],
+        "Select CSV or XLSX files",
+        type=["csv", "xlsx"],
         accept_multiple_files=True,
         key="modal_log_uploader",
-        help="You can add multiple CSV files at once.",
+        help="You can add multiple CSV or XLSX files at once. XLSX files from Nor140 and Nor145 meters are auto-parsed.",
     )
 
     ss = st.session_state
@@ -224,7 +224,7 @@ def _render_upload_modal_contents() -> None:
         ]
         st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
     else:
-        st.info("No files staged yet. Drag and drop CSV files above to begin.")
+        st.info("No files staged yet. Drag and drop CSV or XLSX files above to begin.")
 
     add_col, close_col = st.columns([3, 1])
     with add_col:
@@ -259,7 +259,8 @@ def _render_upload_modal_contents() -> None:
                 suffix += 1
             existing_names.add(final_name)
 
-            tmp_file = tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False)
+            orig_ext = os.path.splitext(item["original_name"])[1].lower() or ".csv"
+            tmp_file = tempfile.NamedTemporaryFile(mode="wb", suffix=orig_ext, delete=False)
             tmp_file.write(item["data"])
             tmp_file.flush()
             tmp_file.close()
@@ -267,13 +268,32 @@ def _render_upload_modal_contents() -> None:
 
             try:
                 log = pc.Log(tmp_file.name)
+                ss["logs"][final_name] = log
+                succeeded_ids.append(item["id"])
+                added += 1
+            except NotImplementedError:
+                # Multi-sheet XLSX (Nor145, etc.) — use parse_all
+                try:
+                    from pycoustic.parsers.nor145_multi_th import Nor145MultipleTHParser
+                    parser = Nor145MultipleTHParser()
+                    profiles = parser.parse_all(tmp_file.name)
+                    for prof_name, prof_df in profiles:
+                        log = pc.Log.from_dataframe(prof_df, filepath=tmp_file.name, name=prof_name)
+                        suffix_n = 1
+                        log_key = f"{final_name} - {prof_name}"
+                        while log_key in existing_names:
+                            log_key = f"{final_name} - {prof_name} ({suffix_n})"
+                            suffix_n += 1
+                        existing_names.add(log_key)
+                        ss["logs"][log_key] = log
+                    succeeded_ids.append(item["id"])
+                    added += 1
+                except Exception as exc:
+                    st.error(f"Failed to create log from {item['original_name']}: {exc}")
+                    continue
             except Exception as exc:
                 st.error(f"Failed to create log from {item['original_name']}: {exc}")
                 continue
-
-            ss["logs"][final_name] = log
-            succeeded_ids.append(item["id"])
-            added += 1
 
         if added:
             ss["last_upload_ts"] = dt.datetime.now()
