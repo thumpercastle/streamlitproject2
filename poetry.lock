@@ -1027,14 +1027,14 @@ files = [
 
 [[package]]
 name = "pycoustic"
-version = "0.4.0"
+version = "0.4.1"
 description = ""
 optional = false
 python-versions = ">=3.12"
 groups = ["main"]
 files = [
-    {file = "pycoustic-0.4.0-py3-none-any.whl", hash = "sha256:e1718c1f40459513f937d6ab009314d247d1524dfe823ab5312d56ad61d38cd3"},
-    {file = "pycoustic-0.4.0.tar.gz", hash = "sha256:24325a90eb14c4ccb3be79437c3a6275023e8ad639de80ecef355520c01be7ea"},
+    {file = "pycoustic-0.4.1-py3-none-any.whl", hash = "sha256:6d8052ee6531362f5a97182f4ae5e28d6eb683a08ce6060fff064119981846fb"},
+    {file = "pycoustic-0.4.1.tar.gz", hash = "sha256:7928a81887140d2fcd408c9deec28a3466ff7e92314386113ff261b4a0f24246"},
 ]
 
 [package.dependencies]
