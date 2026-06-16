@@ -148,7 +148,7 @@ def weather_page() -> None:
             help="Enter your API key to fetch historical weather data.",
         ).strip()
 
-        fetch_clicked = st.form_submit_button("Fetch weather history", use_container_width=True)
+        fetch_clicked = st.form_submit_button("Fetch weather history", width='stretch')
 
     ss["weather_country"] = country
     ss["weather_postcode"] = postcode
@@ -213,7 +213,7 @@ def weather_page() -> None:
         if temp_cols:
             st.plotly_chart(
                 _line_chart(weather_df, "dt", temp_cols, "Temperature"),
-                use_container_width=True,
+                width='stretch',
             )
 
         chart_cols = st.columns(2)
@@ -221,16 +221,16 @@ def weather_page() -> None:
             if wind_cols:
                 st.plotly_chart(
                     _line_chart(weather_df, "dt", wind_cols, "Wind"),
-                    use_container_width=True,
+                    width='stretch',
                 )
         with chart_cols[1]:
             if sky_cols:
                 st.plotly_chart(
                     _line_chart(weather_df, "dt", sky_cols, "Humidity / Cloud / Pressure"),
-                    use_container_width=True,
+                    width='stretch',
                 )
 
-    st.dataframe(weather_df, use_container_width=True)
+    st.dataframe(weather_df, width='stretch')
 
     ss["weather_show_raw"] = st.toggle(
         "Show raw weather object output table",
@@ -239,4 +239,4 @@ def weather_page() -> None:
 
     if ss["weather_show_raw"]:
         st.markdown("### Raw weather data")
-        st.dataframe(weather_df, use_container_width=True)
+        st.dataframe(weather_df, width='stretch')

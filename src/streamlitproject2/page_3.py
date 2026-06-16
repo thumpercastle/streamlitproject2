@@ -270,7 +270,7 @@ def vis_page() -> None:
                     by=["Family", "Band", "Column"],
                     na_position="last",
                 )
-                st.dataframe(debug_df, use_container_width=True, hide_index=True)
+                st.dataframe(debug_df, width='stretch', hide_index=True)
 
                 family_counts = {}
                 for family in ["Leq", "Lmax", "L90"]:
@@ -375,12 +375,12 @@ def vis_page() -> None:
                     height=600,
                     barmode="overlay",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             else:
                 st.info("Select at least one column to display the time history plot.")
 
             st.subheader(f"{name} resampled data")
-            st.dataframe(_prepare_display_df(graph_df), use_container_width=True)
+            st.dataframe(_prepare_display_df(graph_df), width='stretch')
 
             st.divider()
 
@@ -454,7 +454,7 @@ def vis_page() -> None:
                     barmode="overlay",
                     legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="left", x=0),
                 )
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": "hover", "responsive": True})
+                st.plotly_chart(fig, width='stretch', config={"displayModeBar": "hover", "responsive": True})
             else:
                 chart_cols = st.columns(len(period_counts))
                 for col_idx, (period_label, counts_series) in enumerate(period_counts.items()):
@@ -463,6 +463,6 @@ def vis_page() -> None:
                         period_fig = _build_counts_figure(counts_series, title=period_label, colour=colour)
                         st.plotly_chart(
                             period_fig,
-                            use_container_width=True,
+                            width='stretch',
                             config={"displayModeBar": "hover", "responsive": True},
                         )

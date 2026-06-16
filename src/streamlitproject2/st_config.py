@@ -104,13 +104,6 @@ def to_csv_preserve_multiheader(df: pd.DataFrame) -> bytes:
 
 
 @st.cache_data
-def convert_for_download(df: pd.DataFrame) -> bytes:
-    if df is None:
-        return b""
-    return df.to_csv(index=False).encode("utf-8")
-
-
-@st.cache_data
 def _convert_for_download(df: pd.DataFrame) -> bytes:
     if df is None:
         return b""
@@ -225,7 +218,7 @@ def _render_upload_modal_contents() -> None:
                 help="Enter a unique name for this log.",
             ).strip()
         with action_col:
-            if st.button("Remove", key=f"remove_{item['id']}", use_container_width=True):
+            if st.button("Remove", key=f"remove_{item['id']}", width='stretch'):
                 removal_ids.append(item["id"])
 
     if removal_ids:
@@ -245,7 +238,7 @@ def _render_upload_modal_contents() -> None:
             }
             for item in queue
         ]
-        st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(table_data), width='stretch', hide_index=True)
     else:
         st.info("No files staged yet. Drag and drop CSV or XLSX files above to begin.")
 
@@ -254,81 +247,82 @@ def _render_upload_modal_contents() -> None:
         add_clicked = st.button(
             f"Add {len(queue)} file(s) as logs" if queue else "Add files as logs",
             disabled=not queue,
-            use_container_width=True,
+            width='stretch',
             key="modal_add_logs",
         )
     with close_col:
-        if st.button("Close", use_container_width=True, key="modal_close_logs"):
+        if st.button("Close", width='stretch', key="modal_close_logs"):
             ss["show_upload_modal"] = False
             st.rerun()
 
     if add_clicked and queue:
-        existing_names = set(ss["logs"].keys())
-        succeeded_ids: list[str] = []
-        added = 0
+        with st.spinner("Importing log data..."):
+            existing_names = set(ss["logs"].keys())
+            succeeded_ids: list[str] = []
+            added = 0
 
-        for item in list(queue):
-            default_name = os.path.splitext(os.path.basename(item["original_name"]))[0]
-            custom_name = item.get("custom_name") or default_name
+            for item in list(queue):
+                default_name = os.path.splitext(os.path.basename(item["original_name"]))[0]
+                custom_name = item.get("custom_name") or default_name
 
-            if not custom_name:
-                st.error(f"Name for {item['original_name']} cannot be empty.")
-                continue
+                if not custom_name:
+                    st.error(f"Name for {item['original_name']} cannot be empty.")
+                    continue
 
-            final_name = custom_name
-            suffix = 1
-            while final_name in existing_names:
-                final_name = f"{custom_name}-{suffix}"
-                suffix += 1
-            existing_names.add(final_name)
+                final_name = custom_name
+                suffix = 1
+                while final_name in existing_names:
+                    final_name = f"{custom_name}-{suffix}"
+                    suffix += 1
+                existing_names.add(final_name)
 
-            orig_ext = os.path.splitext(item["original_name"])[1].lower() or ".csv"
-            tmp_file = tempfile.NamedTemporaryFile(mode="wb", suffix=orig_ext, delete=False)
-            tmp_file.write(item["data"])
-            tmp_file.flush()
-            tmp_file.close()
-            ss["tmp_paths"].append(tmp_file.name)
+                orig_ext = os.path.splitext(item["original_name"])[1].lower() or ".csv"
+                tmp_file = tempfile.NamedTemporaryFile(mode="wb", suffix=orig_ext, delete=False)
+                tmp_file.write(item["data"])
+                tmp_file.flush()
+                tmp_file.close()
+                ss["tmp_paths"].append(tmp_file.name)
 
-            try:
-                log = pc.Log(tmp_file.name)
-                ss["logs"][final_name] = log
-                succeeded_ids.append(item["id"])
-                added += 1
-            except NotImplementedError:
-                # Multi-sheet XLSX (Nor145, etc.) — use parse_all
                 try:
-                    from pycoustic.parsers.nor145_multi_th import Nor145MultipleTHParser
-                    parser = Nor145MultipleTHParser()
-                    profiles = parser.parse_all(tmp_file.name)
-                    for prof_name, prof_df in profiles:
-                        log = pc.Log.from_dataframe(prof_df, filepath=tmp_file.name, name=prof_name)
-                        suffix_n = 1
-                        log_key = f"{final_name} - {prof_name}"
-                        while log_key in existing_names:
-                            log_key = f"{final_name} - {prof_name} ({suffix_n})"
-                            suffix_n += 1
-                        existing_names.add(log_key)
-                        ss["logs"][log_key] = log
+                    log = pc.Log(tmp_file.name)
+                    ss["logs"][final_name] = log
                     succeeded_ids.append(item["id"])
                     added += 1
+                except NotImplementedError:
+                    # Multi-sheet XLSX (Nor145, etc.) — use parse_all
+                    try:
+                        from pycoustic.parsers.nor145_multi_th import Nor145MultipleTHParser
+                        parser = Nor145MultipleTHParser()
+                        profiles = parser.parse_all(tmp_file.name)
+                        for prof_name, prof_df in profiles:
+                            log = pc.Log.from_dataframe(prof_df, filepath=tmp_file.name, name=prof_name)
+                            suffix_n = 1
+                            log_key = f"{final_name} - {prof_name}"
+                            while log_key in existing_names:
+                                log_key = f"{final_name} - {prof_name} ({suffix_n})"
+                                suffix_n += 1
+                            existing_names.add(log_key)
+                            ss["logs"][log_key] = log
+                        succeeded_ids.append(item["id"])
+                        added += 1
+                    except Exception as exc:
+                        st.error(f"Failed to create log from {item['original_name']}: {exc}")
+                        continue
                 except Exception as exc:
                     st.error(f"Failed to create log from {item['original_name']}: {exc}")
                     continue
-            except Exception as exc:
-                st.error(f"Failed to create log from {item['original_name']}: {exc}")
-                continue
 
-        if added:
-            ss["last_upload_ts"] = dt.datetime.now()
-            ss["num_logs"] = len(ss["logs"])
-            for upload_id in succeeded_ids:
-                st.session_state.pop(f"log_name_{upload_id}", None)
-            queue = [item for item in queue if item["id"] not in succeeded_ids]
-            _update_pending_uploads(queue)
-            st.success(f"Added {added} log(s).")
-            if not queue:
-                ss["show_upload_modal"] = False
-            st.rerun()
+            if added:
+                ss["last_upload_ts"] = dt.datetime.now()
+                ss["num_logs"] = len(ss["logs"])
+                for upload_id in succeeded_ids:
+                    st.session_state.pop(f"log_name_{upload_id}", None)
+                queue = [item for item in queue if item["id"] not in succeeded_ids]
+                _update_pending_uploads(queue)
+                st.success(f"Added {added} log(s).")
+                if not queue:
+                    ss["show_upload_modal"] = False
+                st.rerun()
 
 
 def _reset_workspace() -> None:

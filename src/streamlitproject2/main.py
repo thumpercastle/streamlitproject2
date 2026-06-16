@@ -54,7 +54,7 @@ with st.sidebar:
         mime="text/csv",
         key="dl_all_tables_csv",
         disabled=not any_data,
-        use_container_width=True,
+        width='stretch',
         help=(
             "Exports all summary tables into one CSV file with section headers "
             "and full multi-row column headers where applicable."

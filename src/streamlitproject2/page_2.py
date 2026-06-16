@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from st_config import _build_survey, init_app_state, to_csv_preserve_multiheader
@@ -78,7 +79,7 @@ def analysis_page() -> None:
             )
             ss["broadband_df"] = df
             if df is not None and not df.empty:
-                st.dataframe(df, use_container_width=True)
+                st.dataframe(df, width='stretch')
             else:
                 st.info("No broadband summary data available for the selected logs.")
         except Exception as exc:
@@ -103,7 +104,7 @@ def analysis_page() -> None:
             df = survey.leq_spectra()
             ss["leq_df"] = df
             if df is not None and not df.empty:
-                st.dataframe(df, use_container_width=True)
+                st.dataframe(df, width='stretch')
             else:
                 st.info("No Leq spectra data available for the selected logs.")
         except Exception as exc:
@@ -165,7 +166,7 @@ def analysis_page() -> None:
             )
             ss["lmax_df"] = df
             if df is not None and not df.empty:
-                st.dataframe(df, use_container_width=True)
+                st.dataframe(df, width='stretch')
             else:
                 st.info("No Lmax spectra data available for the selected logs and settings.")
         except Exception as exc:
@@ -289,7 +290,7 @@ def analysis_page() -> None:
             )
             ss["modal_df"] = modal_df
             if modal_df is not None and not modal_df.empty:
-                st.dataframe(modal_df, use_container_width=True)
+                st.dataframe(modal_df, width='stretch')
             else:
                 st.info("No modal data available for the selected logs and settings.")
         except Exception as exc:
@@ -316,7 +317,7 @@ def analysis_page() -> None:
             )
             ss["counts"] = counts_df
             if counts_df is not None and not counts_df.empty:
-                st.dataframe(counts_df, use_container_width=True)
+                st.dataframe(counts_df, width='stretch')
             else:
                 st.info("No counts data available for the selected logs and settings.")
         except Exception as exc:
@@ -439,15 +440,17 @@ def analysis_page() -> None:
                                     height=400,
                                     margin=dict(l=40, r=20, t=20, b=40),
                                 )
-                                st.plotly_chart(fig, use_container_width=True)
+                                st.plotly_chart(fig, width='stretch')
 
                                 st.subheader("Peak spectra")
                                 # Filter out internal columns and sort by metric family
-                                drop_cols = [("Night idx", ""), ("Time", "")]
-                                display_cols = [c for c in peaks_df.columns if c not in drop_cols]
-                                display_cols = sorted(display_cols, key=lambda c: (c[0], str(c[1])))
+                                # Note: "Time" is a plain string column (not a tuple), while
+                                # spectral columns are tuples — handle both cases.
+                                drop_cols_set = {("Night idx", ""), ("Time", ""), "Time", ("Night idx",)}
+                                display_cols = [c for c in peaks_df.columns if c not in drop_cols_set]
+                                display_cols = sorted(display_cols, key=lambda c: (c[0] if isinstance(c, tuple) else c, str(c[1]) if isinstance(c, tuple) else ""))
                                 display_df = peaks_df[display_cols] if display_cols else peaks_df
-                                st.dataframe(display_df, use_container_width=True)
+                                st.dataframe(display_df, width='stretch')
 
                                 # Build combined peaks across ALL logs for download
                                 survey_in = ss.get("survey")
