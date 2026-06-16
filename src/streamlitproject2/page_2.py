@@ -350,7 +350,7 @@ def analysis_page() -> None:
                 key="peak_picker_log",
             )
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 pivot_family = st.selectbox(
                     "Pivot column",
@@ -363,7 +363,7 @@ def analysis_page() -> None:
                     "K (number of peaks)",
                     min_value=1,
                     max_value=100,
-                    value=5,
+                    value=3,
                     step=1,
                     key="peak_picker_k",
                 )
@@ -373,6 +373,18 @@ def analysis_page() -> None:
                     options=["Highest", "Lowest"],
                     index=0,
                     key="peak_picker_direction",
+                )
+            with col4:
+                exclusion_zone = st.number_input(
+                    "Exclusion zone (seconds)",
+                    min_value=0,
+                    max_value=3600,
+                    value=0,
+                    step=1,
+                    key="peak_picker_exclusion",
+                    help="If set, no two peaks can be within this many seconds of "
+                         "each other. The algorithm greedily picks the best peak, "
+                         "then skips any others within the exclusion window.",
                 )
 
             try:
@@ -408,6 +420,7 @@ def analysis_page() -> None:
                                 pivot_col=pivot_col,
                                 k=int(k_val),
                                 high=(high_low == "Highest"),
+                                exclusion_zone_s=exclusion_zone,
                             )
 
                             if not peaks_df.empty:
@@ -443,12 +456,26 @@ def analysis_page() -> None:
                                 st.plotly_chart(fig, width='stretch')
 
                                 st.subheader("Peak spectra")
-                                # Filter out internal columns and sort by metric family
-                                # Note: "Time" is a plain string column (not a tuple), while
-                                # spectral columns are tuples — handle both cases.
+                                # Filter out internal columns
                                 drop_cols_set = {("Night idx", ""), ("Time", ""), "Time", ("Night idx",)}
-                                display_cols = [c for c in peaks_df.columns if c not in drop_cols_set]
-                                display_cols = sorted(display_cols, key=lambda c: (c[0] if isinstance(c, tuple) else c, str(c[1]) if isinstance(c, tuple) else ""))
+                                spectral_cols = [c for c in peaks_df.columns if c not in drop_cols_set]
+
+                                # Sort columns: pivot family first, then other families
+                                # alphabetically; within each family, bands sort numerically
+                                # where possible (e.g. 20, 25, 31.5, 40 … not 100, 1000 …).
+                                def _peak_col_sort_key(col):
+                                    family = col[0] if isinstance(col, tuple) else str(col)
+                                    band = col[1] if isinstance(col, tuple) and len(col) > 1 else ""
+                                    # Primary: pivot family first
+                                    pivot_order = 0 if family == pivot_family else 1
+                                    # Secondary: band as numeric value, or string
+                                    try:
+                                        band_key = (0, float(band))
+                                    except (ValueError, TypeError):
+                                        band_key = (1, str(band))
+                                    return (pivot_order, family, band_key)
+
+                                display_cols = sorted(spectral_cols, key=_peak_col_sort_key)
                                 display_df = peaks_df[display_cols] if display_cols else peaks_df
                                 st.dataframe(display_df, width='stretch')
 
@@ -463,6 +490,7 @@ def analysis_page() -> None:
                                                 pivot_col=pivot_col,
                                                 k=int(k_val),
                                                 high=(high_low == "Highest"),
+                                                exclusion_zone_s=exclusion_zone,
                                             )
                                             if not pk.empty:
                                                 pk = pk.rename_axis("Timestamp")
@@ -477,6 +505,13 @@ def analysis_page() -> None:
                                     combined_peaks = peaks_df.copy()
                                     combined_peaks = combined_peaks.rename_axis("Timestamp")
                                     combined_peaks["Log"] = selected_log
+
+                                # Reorder combined_peaks columns to match display column order
+                                # so that the CSV mirrors the table grouping.
+                                existing_display = [c for c in display_cols if c in combined_peaks.columns]
+                                extra_cols = [c for c in combined_peaks.columns if c not in display_cols and c not in drop_cols_set]
+                                ordered_cols = existing_display + extra_cols + ["Log"]
+                                combined_peaks = combined_peaks[ordered_cols]
 
                                 st.download_button(
                                     "Download peaks CSV (all logs)",
