@@ -509,10 +509,12 @@ def analysis_page() -> None:
                                     combined_peaks["Log"] = selected_log
 
                                 # Reorder combined_peaks columns to match display column order
-                                # so that the CSV mirrors the table grouping.
+                                                                # so that the CSV mirrors the table grouping.
+                                # "Log" will naturally be picked up by extra_cols since
+                                # it's not in display_cols or drop_cols_set.
                                 existing_display = [c for c in display_cols if c in combined_peaks.columns]
                                 extra_cols = [c for c in combined_peaks.columns if c not in display_cols and c not in drop_cols_set]
-                                ordered_cols = existing_display + extra_cols + ["Log"]
+                                ordered_cols = existing_display + extra_cols
                                 combined_peaks = combined_peaks[ordered_cols]
 
                                 st.download_button(
