@@ -377,14 +377,16 @@ def analysis_page() -> None:
             with col4:
                 exclusion_zone = st.number_input(
                     "Exclusion zone (seconds)",
-                    min_value=0,
-                    max_value=3600,
-                    value=0,
-                    step=1,
+                    min_value=0.0,
+                    max_value=3600.0,
+                    value=0.0,
+                    step=0.1,
+                    format="%.1f",
                     key="peak_picker_exclusion",
                     help="If set, no two peaks can be within this many seconds of "
                          "each other. The algorithm greedily picks the best peak, "
-                         "then skips any others within the exclusion window.",
+                         "then skips any others within the exclusion window. "
+                         "Accepts fractional values (e.g. 0.5, 1.6).",
                 )
 
             try:
